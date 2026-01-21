@@ -38,25 +38,40 @@
 
   body[data-theme="rhcp"] {
     background-image: 
-      radial-gradient(circle at 20% 50%, rgba(255, 152, 0, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(233, 30, 99, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(213, 0, 249, 0.05) 0%, transparent 50%);
+      radial-gradient(circle at 20% 50%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(233, 30, 99, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(213, 0, 249, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 60% 60%, rgba(0, 229, 255, 0.05) 0%, transparent 50%);
+    animation: ambient-shift 15s ease-in-out infinite;
   }
 
-  body[data-theme="rhcp"] nav {
+  @keyframes ambient-shift {
+    0%, 100% {
+      background-position: 0% 0%, 100% 100%, 0% 0%, 50% 50%;
+    }
+    50% {
+      background-position: 100% 100%, 0% 0%, 100% 100%, 25% 75%;
+    }
+  }
+
+  body[data-theme="rhcp"] header {
     background-color: #000000 !important;
     background-image: none !important;
-    border-bottom: 3px solid #FF9800 !important;
-    position: relative;
   }
 
-  body[data-theme="rhcp"] nav a,
-  body[data-theme="rhcp"] nav button,
-  body[data-theme="rhcp"] nav div {
+  body[data-theme="rhcp"] header nav {
+    border-bottom: 3px solid #FF9800 !important;
+    position: relative;
+    padding-bottom: 1rem;
+  }
+
+  body[data-theme="rhcp"] header a,
+  body[data-theme="rhcp"] header button,
+  body[data-theme="rhcp"] header div {
     color: #e5e7eb !important;
   }
 
-  body[data-theme="rhcp"] nav::after {
+  body[data-theme="rhcp"] header nav::after {
     content: '';
     position: absolute;
     bottom: -3px;
@@ -271,38 +286,75 @@
 
   @keyframes confetti-fall {
     0% {
-      transform: translateY(-100vh) rotate(0deg);
+      transform: translateY(-10vh) translateX(0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
       opacity: 1;
     }
+    90% {
+      opacity: 0.8;
+    }
     100% {
-      transform: translateY(100vh) rotate(720deg);
+      transform: translateY(110vh) translateX(50px) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes confetti-fall-reverse {
+    0% {
+      transform: translateY(-10vh) translateX(0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(110vh) translateX(-50px) rotate(-720deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes particle-float {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
       opacity: 0.3;
+    }
+    50% {
+      transform: translate(20px, -20px) scale(1.5);
+      opacity: 0.6;
     }
   }
 
   body[data-theme="rhcp"] .spicy-home-title::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 10%;
-    width: 10px;
-    height: 10px;
-    background: #FF9800;
-    animation: confetti-fall 8s linear infinite;
-    border-radius: 2px;
+    top: -10px;
+    left: 15%;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(135deg, #FF9800, #FFC400);
+    animation: confetti-fall 7s ease-in infinite;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.8);
+    z-index: 100;
   }
 
   body[data-theme="rhcp"] .spicy-home-title::after {
     content: '';
     position: fixed;
-    top: 0;
-    left: 30%;
-    width: 8px;
-    height: 8px;
-    background: #E91E63;
-    animation: confetti-fall 10s linear infinite;
-    animation-delay: 1s;
-    border-radius: 2px;
+    top: -10px;
+    right: 15%;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, #E91E63, #D500F9);
+    animation: confetti-fall-reverse 8s ease-in infinite;
+    animation-delay: 2s;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(233, 30, 99, 0.8);
+    z-index: 100;
   }
 
   body[data-theme="rhcp"] main::before {
@@ -337,43 +389,71 @@
   body[data-theme="rhcp"] main::after {
     content: '';
     position: fixed;
-    top: 0;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    background: #D500F9;
-    animation: confetti-fall 9s linear infinite;
-    animation-delay: 2s;
-    border-radius: 50%;
+    top: -10px;
+    left: 35%;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #D500F9, #00E5FF);
+    animation: confetti-fall 6s ease-in infinite;
+    animation-delay: 1s;
+    border-radius: 3px;
+    box-shadow: 0 0 15px rgba(213, 0, 249, 0.8);
     pointer-events: none;
+    z-index: 100;
   }
 
-  body[data-theme="rhcp"] header::before {
+  body[data-theme="rhcp"] body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 70%;
+    top: -10px;
+    left: 55%;
     width: 10px;
     height: 10px;
-    background: #00E5FF;
-    animation: confetti-fall 7s linear infinite;
-    animation-delay: 0.5s;
-    border-radius: 2px;
+    background: linear-gradient(135deg, #00E5FF, #FFC400);
+    animation: confetti-fall-reverse 9s ease-in infinite;
+    animation-delay: 3s;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
     pointer-events: none;
+    z-index: 100;
   }
 
-  body[data-theme="rhcp"] header::after {
+  body[data-theme="rhcp"] body::after {
     content: '';
     position: fixed;
-    top: 0;
-    left: 85%;
-    width: 6px;
-    height: 6px;
-    background: #FFC400;
-    animation: confetti-fall 11s linear infinite;
-    animation-delay: 3s;
+    top: -10px;
+    right: 25%;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #FFC400, #FF9800);
+    animation: confetti-fall 10s ease-in infinite;
+    animation-delay: 4s;
     border-radius: 50%;
+    box-shadow: 0 0 12px rgba(255, 196, 0, 0.8);
     pointer-events: none;
+    z-index: 100;
+  }
+
+  @keyframes border-glow {
+    0%, 100% {
+      border-color: #FF9800;
+      box-shadow: 0 0 20px rgba(255, 152, 0, 0.5);
+    }
+    25% {
+      border-color: #E91E63;
+      box-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
+    }
+    50% {
+      border-color: #D500F9;
+      box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);
+    }
+    75% {
+      border-color: #00E5FF;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+    }
+  }
+
+  body[data-theme="rhcp"] main {
+    animation: border-glow 8s ease-in-out infinite;
   }
 
   body {
