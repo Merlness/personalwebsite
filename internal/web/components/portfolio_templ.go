@@ -61,7 +61,7 @@ func Portfolio(categories []portfolio.Category, photoToBlog map[string]string) t
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"group relative overflow-hidden border border-silver-500/20 bg-black cursor-pointer block\"><div class=\"aspect-[3/2] overflow-hidden opacity-60 group-hover:opacity-40 transition-opacity duration-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"group relative overflow-hidden border cursor-pointer block\" style=\"border-color: var(--color-border); background-color: #1a1a1a;\"><div class=\"aspect-[3/2] overflow-hidden opacity-60 group-hover:opacity-40 transition-opacity duration-500\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -97,25 +97,25 @@ func Portfolio(categories []portfolio.Category, photoToBlog map[string]string) t
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"w-full h-full bg-silver-500/10 flex items-center justify-center text-silver-600\"><span>No Preview</span></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"w-full h-full flex items-center justify-center\" style=\"background-color: rgba(128,128,128,0.1); color: #999;\"><span>No Preview</span></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10\"><h3 class=\"text-2xl font-serif text-silver-100 mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10\"><h3 class=\"text-2xl font-serif mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300 text-white\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(cat.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio.templ`, Line: 33, Col: 166}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio.templ`, Line: 33, Col: 161}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</h3><div class=\"mt-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-150\"><span class=\"text-xs uppercase tracking-widest border-b border-silver-400 pb-1 text-silver-200\">View Collection</span></div></div></a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</h3><div class=\"mt-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-150\"><span class=\"text-xs uppercase tracking-widest border-b pb-1 text-white\" style=\"border-color: rgba(255,255,255,0.6);\">View Collection</span></div></div></a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

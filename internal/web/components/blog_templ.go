@@ -46,12 +46,12 @@ func BlogList(posts []blog.Post) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-12\"><div class=\"text-center space-y-4\"><h1 class=\"text-4xl font-serif text-silver-100\">Journal</h1><div class=\"h-1 w-24 bg-silver-400 mx-auto\"></div><p class=\"text-silver-400 max-w-2xl mx-auto\">Thoughts, stories, and adventures from the road.</p></div><div class=\"max-w-3xl mx-auto space-y-12\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-12\"><div class=\"text-center space-y-4\"><h1 class=\"text-4xl font-serif\" style=\"color: var(--color-text-primary);\">Journal</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div><p class=\"max-w-2xl mx-auto\" style=\"color: var(--color-text-secondary);\">Thoughts, stories, and adventures from the road.</p></div><div class=\"max-w-3xl mx-auto space-y-12\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if len(posts) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"text-center text-silver-500\">No posts yet.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"text-center\" style=\"color: var(--color-text-secondary);\">No posts yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -98,7 +98,7 @@ func BlogCard(post blog.Post) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<article class=\"border-b border-silver-500/20 pb-8 last:border-0\"><div class=\"space-y-3\"><div class=\"text-xs font-mono text-silver-500 uppercase tracking-widest\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<article class=\"border-b pb-8 last:border-0\" style=\"border-color: var(--color-border);\"><div class=\"space-y-3\"><div class=\"text-xs font-mono uppercase tracking-widest\" style=\"color: var(--color-text-secondary);\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -111,7 +111,7 @@ func BlogCard(post blog.Post) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><h2 class=\"text-2xl font-serif text-silver-100 hover:text-silver-300 transition-colors\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><h2 class=\"text-2xl font-serif hover:opacity-70 transition-opacity\" style=\"color: var(--color-text-primary);\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -137,7 +137,7 @@ func BlogCard(post blog.Post) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a></h2><p class=\"text-silver-400 leading-relaxed\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</a></h2><p class=\"leading-relaxed\" style=\"color: var(--color-text-secondary);\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -163,7 +163,7 @@ func BlogCard(post blog.Post) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" class=\"text-xs uppercase tracking-widest text-silver-500 hover:text-silver-200 transition-colors border-b border-transparent hover:border-silver-200 inline-block pb-1\">Read Article</a></div></div></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" class=\"text-xs uppercase tracking-widest hover:opacity-70 transition-opacity border-b inline-block pb-1\" style=\"color: var(--color-text-secondary); border-color: var(--color-border);\">Read Article</a></div></div></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

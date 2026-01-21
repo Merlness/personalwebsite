@@ -45,7 +45,7 @@ func BlogPost(post blog.Post) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"max-w-3xl mx-auto space-y-8\"><div class=\"space-y-4 text-center\"><div class=\"text-sm font-mono text-silver-500 uppercase tracking-widest\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<article class=\"max-w-3xl mx-auto space-y-8\"><div class=\"space-y-4 text-center\"><div class=\"text-sm font-mono uppercase tracking-widest\" style=\"color: var(--color-text-secondary);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -58,7 +58,7 @@ func BlogPost(post blog.Post) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><h1 class=\"text-4xl md:text-5xl font-serif text-silver-100 leading-tight\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><h1 class=\"text-4xl md:text-5xl font-serif leading-tight\" style=\"color: var(--color-text-primary);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -71,7 +71,7 @@ func BlogPost(post blog.Post) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h1><div class=\"h-1 w-24 bg-silver-400 mx-auto\"></div></div><div class=\"prose prose-invert prose-silver mx-auto\"><div class=\"text-silver-300 leading-relaxed\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div></div><div class=\"prose prose-invert prose-silver mx-auto\"><div class=\"leading-relaxed\" style=\"color: var(--color-text-secondary);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -84,12 +84,12 @@ func BlogPost(post blog.Post) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if len(post.LinkedPhotos) > 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"text-center pt-8\"><a href=\"/portfolio\" class=\"inline-block border border-silver-400 text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors\">View Related Collection</a></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"text-center pt-8\"><a href=\"/portfolio\" class=\"inline-block border px-6 py-3 uppercase tracking-widest text-sm hover:opacity-70 transition-opacity\" style=\"border-color: var(--color-border); color: var(--color-text-primary);\">View Related Collection</a></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"pt-12 text-center border-t border-silver-500/20\"><a href=\"/blog\" class=\"text-sm uppercase tracking-widest text-silver-400 hover:text-silver-100 transition-colors\">&larr; Back to Journal</a></div></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"pt-12 text-center border-t\" style=\"border-color: var(--color-border);\"><a href=\"/blog\" class=\"text-sm uppercase tracking-widest hover:opacity-70 transition-opacity\" style=\"color: var(--color-text-secondary);\">&larr; Back to Journal</a></div></article>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

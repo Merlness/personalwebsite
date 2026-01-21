@@ -8,31 +8,31 @@ templ BlogPost(post blog.Post) {
 	@Layout(post.Title + " | Merl Martin") {
 		<article class="max-w-3xl mx-auto space-y-8">
 			<div class="space-y-4 text-center">
-				<div class="text-sm font-mono text-silver-500 uppercase tracking-widest">
+				<div class="text-sm font-mono uppercase tracking-widest" style="color: var(--color-text-secondary);">
 					{ post.Date.Format("January 02, 2006") }
 				</div>
-				<h1 class="text-4xl md:text-5xl font-serif text-silver-100 leading-tight">
+				<h1 class="text-4xl md:text-5xl font-serif leading-tight" style="color: var(--color-text-primary);">
 					{ post.Title }
 				</h1>
-				<div class="h-1 w-24 bg-silver-400 mx-auto"></div>
+				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
 			</div>
 
 			<div class="prose prose-invert prose-silver mx-auto">
-				<div class="text-silver-300 leading-relaxed">
+				<div class="leading-relaxed" style="color: var(--color-text-secondary);">
 					@templ.Raw(post.Content)
 				</div>
 			</div>
 
 			if len(post.LinkedPhotos) > 0 {
 				<div class="text-center pt-8">
-					<a href="/portfolio" class="inline-block border border-silver-400 text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors">
+					<a href="/portfolio" class="inline-block border px-6 py-3 uppercase tracking-widest text-sm hover:opacity-70 transition-opacity" style="border-color: var(--color-border); color: var(--color-text-primary);">
 						View Related Collection
 					</a>
 				</div>
 			}
 
-			<div class="pt-12 text-center border-t border-silver-500/20">
-				<a href="/blog" class="text-sm uppercase tracking-widest text-silver-400 hover:text-silver-100 transition-colors">
+			<div class="pt-12 text-center border-t" style="border-color: var(--color-border);">
+				<a href="/blog" class="text-sm uppercase tracking-widest hover:opacity-70 transition-opacity" style="color: var(--color-text-secondary);">
 					&larr; Back to Journal
 				</a>
 			</div>
