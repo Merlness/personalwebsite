@@ -1,5 +1,7 @@
 # Personal Website
 
+![Tests](https://github.com/Merlness/personalwebsite/actions/workflows/test.yml/badge.svg)
+
 A sophisticated personal website built with Go, Templ, and Tailwind CSS.
 
 ## Features
