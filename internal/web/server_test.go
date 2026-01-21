@@ -136,18 +136,21 @@ func TestPortfolioAssets(t *testing.T) {
 	// Setup: Create a temporary file in content/portfolio
 	// We need to handle the path relative to where tests run (internal/web)
 	contentDir := "../../content/portfolio"
-	if _, err := os.Stat(contentDir); os.IsNotExist(err) {
+	_, err := os.Stat(contentDir)
+	if err != nil {
 		// If running from root or elsewhere, try to find it
-		if _, err := os.Stat("content/portfolio"); err == nil {
-			contentDir = "content/portfolio"
+		fallback := "content/portfolio"
+		if _, err2 := os.Stat(fallback); err2 == nil {
+			contentDir = fallback
 		} else {
-			t.Fatal("Could not find content/portfolio directory")
+			cwd, _ := os.Getwd()
+			t.Fatalf("Could not find content/portfolio directory.\nTried: %s (err: %v)\nTried: %s (err: %v)\nCurrent dir: %s", contentDir, err, fallback, err2, cwd)
 		}
 	}
 
 	testFile := "test.txt"
 	fullPath := contentDir + "/" + testFile
-	err := os.WriteFile(fullPath, []byte("test content"), 0644)
+	err = os.WriteFile(fullPath, []byte("test content"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
