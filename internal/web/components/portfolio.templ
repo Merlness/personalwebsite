@@ -1,0 +1,43 @@
+package components
+
+import "personalwebsite/internal/portfolio"
+
+templ Portfolio(categories []portfolio.Category, photoToBlog map[string]string) {
+	@Layout("Portfolio | Merl Martin") {
+		<div class="space-y-16">
+			
+            <!-- Header -->
+			<div class="text-center space-y-4">
+				<h1 class="text-4xl font-serif" style="color: var(--color-text-primary);">Portfolio</h1>
+				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
+				<p class="max-w-2xl mx-auto" style="color: var(--color-text-secondary);">
+					Explore my collection of moments captured across different styles and environments.
+				</p>
+			</div>
+
+			<!-- Main Category Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                for _, cat := range categories {
+                    <a href={ templ.SafeURL("/portfolio/" + cat.Name) } class="group relative overflow-hidden border border-silver-500/20 bg-black cursor-pointer block">
+                        <div class="aspect-[3/2] overflow-hidden opacity-60 group-hover:opacity-40 transition-opacity duration-500">
+                            if cat.CoverImage != "" {
+                                <img src={ cat.CoverImage + "?w=600" } alt={ cat.Name } class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                            } else {
+                                <div class="w-full h-full bg-silver-500/10 flex items-center justify-center text-silver-600">
+                                    <span>No Preview</span>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                            <h3 class="text-2xl font-serif text-silver-100 mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300">{ cat.Name }</h3>
+                            <div class="mt-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-150">
+                                <span class="text-xs uppercase tracking-widest border-b border-silver-400 pb-1 text-silver-200">View Collection</span>
+                            </div>
+                        </div>
+                    </a>
+                }
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,41 @@
+package components
+
+import (
+    "personalwebsite/internal/blog"
+)
+
+templ BlogPost(post blog.Post) {
+	@Layout(post.Title + " | Merl Martin") {
+		<article class="max-w-3xl mx-auto space-y-8">
+			<div class="space-y-4 text-center">
+				<div class="text-sm font-mono text-silver-500 uppercase tracking-widest">
+					{ post.Date.Format("January 02, 2006") }
+				</div>
+				<h1 class="text-4xl md:text-5xl font-serif text-silver-100 leading-tight">
+					{ post.Title }
+				</h1>
+				<div class="h-1 w-24 bg-silver-400 mx-auto"></div>
+			</div>
+
+			<div class="prose prose-invert prose-silver mx-auto">
+				<div class="text-silver-300 leading-relaxed">
+					@templ.Raw(post.Content)
+				</div>
+			</div>
+
+			if len(post.LinkedPhotos) > 0 {
+				<div class="text-center pt-8">
+					<a href="/portfolio" class="inline-block border border-silver-400 text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors">
+						View Related Collection
+					</a>
+				</div>
+			}
+
+			<div class="pt-12 text-center border-t border-silver-500/20">
+				<a href="/blog" class="text-sm uppercase tracking-widest text-silver-400 hover:text-silver-100 transition-colors">
+					&larr; Back to Journal
+				</a>
+			</div>
+		</article>
+	}
+}

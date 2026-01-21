@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+*.log
+
+# Exclude large image files - store them elsewhere
+content/portfolio/**/*.jpg
+content/portfolio/**/*.jpeg
+content/portfolio/**/*.png
+content/aboutme/*.jpg
+content/aboutme/*.jpeg
+content/aboutme/*.png
