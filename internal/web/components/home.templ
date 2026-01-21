@@ -2,7 +2,14 @@ package components
 
 templ Home() {
 	@Layout("Personal Website") {
-		<div class="flex flex-col items-center justify-center h-full space-y-8 text-center relative">
+		<div class="flex flex-col items-center justify-center h-full space-y-8 text-center relative overflow-hidden">
+			<!-- Spicy Mode Background Effects -->
+			<div class="absolute inset-0 pointer-events-none overflow-hidden" x-show="theme === 'rhcp'" style="display: none;">
+				<div class="spicy-bg-pattern absolute top-0 left-0 w-full h-full opacity-10"></div>
+				<div class="spicy-floating-item item-1 absolute top-10 left-10 w-32 h-32 rounded-full blur-3xl bg-marigold opacity-20 animate-pulse"></div>
+				<div class="spicy-floating-item item-2 absolute bottom-20 right-20 w-40 h-40 rounded-full blur-3xl bg-pink-hot opacity-20 animate-pulse delay-700"></div>
+			</div>
+
 			<h1 class="text-5xl md:text-7xl font-serif spicy-decoration spicy-home-title relative z-10" style="color: var(--color-text-primary);">
 				Capturing
 				<span class="block italic" style="color: var(--color-text-secondary);">Moments</span>

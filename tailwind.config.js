@@ -14,6 +14,10 @@ module.exports = {
         },
         border: 'var(--color-border)',
         accent: 'var(--color-accent)',
+        marigold: 'var(--color-marigold)',
+        'marigold-dark': 'var(--color-marigold-dark)',
+        'pink-hot': 'var(--color-pink-hot)',
+        'purple-deep': 'var(--color-purple-deep)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
