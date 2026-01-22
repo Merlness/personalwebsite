@@ -45,6 +45,9 @@ jobs:
       - name: Build Static Site
         run: go run cmd/ssg/main.go
 
+      - name: Verify Dist
+        run: ls -R dist
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
