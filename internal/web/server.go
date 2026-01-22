@@ -99,16 +99,24 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service) htt
 		component.Render(r.Context(), w)
 	})
 
-	portfolioPath := "./content/portfolio"
+	portfolioPath := "./content/portfolio_optimized"
 	if _, err := os.Stat(portfolioPath); os.IsNotExist(err) {
-		portfolioPath = "../../content/portfolio"
+		// Fallback to original if optimized doesn't exist (local dev)
+		portfolioPath = "./content/portfolio"
+		if _, err := os.Stat(portfolioPath); os.IsNotExist(err) {
+			portfolioPath = "../../content/portfolio"
+		}
 	}
 
 	// Use ImageHandler instead of standard FileServer
 	imageHandler := NewImageHandler(portfolioPath)
 	mux.Handle("/assets/portfolio/", http.StripPrefix("/assets/portfolio/", imageHandler))
 
-	mux.Handle("/assets/aboutme/", http.StripPrefix("/assets/aboutme/", http.FileServer(http.Dir("content/aboutme"))))
+	aboutmePath := "content/aboutme_optimized"
+	if _, err := os.Stat(aboutmePath); os.IsNotExist(err) {
+		aboutmePath = "content/aboutme"
+	}
+	mux.Handle("/assets/aboutme/", http.StripPrefix("/assets/aboutme/", http.FileServer(http.Dir(aboutmePath))))
 
 	assetsPath := "./internal/assets"
 	if _, err := os.Stat(assetsPath); os.IsNotExist(err) {

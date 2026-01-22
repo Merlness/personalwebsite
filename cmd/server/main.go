@@ -11,7 +11,13 @@ import (
 
 func main() {
 	blogService := blog.NewFilesystemService("content/blog")
-	portfolioService := portfolio.NewFilesystemService("content/portfolio", "/assets/portfolio")
+
+	portfolioRoot := "content/portfolio_optimized"
+	if _, err := os.Stat(portfolioRoot); os.IsNotExist(err) {
+		portfolioRoot = "content/portfolio"
+	}
+
+	portfolioService := portfolio.NewFilesystemService(portfolioRoot, "/assets/portfolio")
 	server := web.NewServer(blogService, portfolioService)
 	port := os.Getenv("PORT")
 	if port == "" {

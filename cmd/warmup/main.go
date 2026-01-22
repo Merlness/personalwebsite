@@ -14,8 +14,15 @@ func main() {
 
 	// Configuration
 	// Assume running from project root
-	contentRoot := "content/portfolio"
-	cacheRoot := filepath.Join(os.TempDir(), "personalwebsite_cache")
+	contentRoot := "content/portfolio_optimized"
+	if _, err := os.Stat(contentRoot); os.IsNotExist(err) {
+		contentRoot = "content/portfolio"
+	}
+
+	cacheRoot := os.Getenv("CACHE_DIR")
+	if cacheRoot == "" {
+		cacheRoot = filepath.Join(os.TempDir(), "personalwebsite_cache")
+	}
 
 	if _, err := os.Stat(contentRoot); os.IsNotExist(err) {
 		fmt.Printf("Error: %s not found. Please run from project root.\n", contentRoot)

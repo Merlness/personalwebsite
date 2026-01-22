@@ -15,7 +15,10 @@ type ImageHandler struct {
 }
 
 func NewImageHandler(contentRoot string) *ImageHandler {
-	cacheRoot := filepath.Join(os.TempDir(), "personalwebsite_cache")
+	cacheRoot := os.Getenv("CACHE_DIR")
+	if cacheRoot == "" {
+		cacheRoot = filepath.Join(os.TempDir(), "personalwebsite_cache")
+	}
 	os.MkdirAll(cacheRoot, 0755)
 	return &ImageHandler{
 		contentRoot: contentRoot,

@@ -1,0 +1,11 @@
+.git
+node_modules
+personalwebsite_cache
+tmp
+.DS_Store
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+test
