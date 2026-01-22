@@ -44,7 +44,7 @@ func main() {
 	copyDir("content/aboutme_optimized", filepath.Join(outputDir, "assets/aboutme"))
 
 	// 3. Create CNAME if needed (optional)
-	// os.WriteFile(filepath.Join(outputDir, "CNAME"), []byte("merlmartin.com"), 0644)
+	os.WriteFile(filepath.Join(outputDir, "CNAME"), []byte("merlmartin.com"), 0644)
 
 	// 4. Create .nojekyll to prevent GitHub from ignoring underscore files
 	os.WriteFile(filepath.Join(outputDir, ".nojekyll"), []byte(""), 0644)
