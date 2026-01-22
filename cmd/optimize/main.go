@@ -20,6 +20,7 @@ func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
 		return
 	}
 
+	// 1. Process new/modified files
 	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -48,9 +49,16 @@ func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
 			return err
 		}
 
-		// Skip if already exists
-		if _, err := os.Stat(destPath); err == nil {
-			// fmt.Printf("Skipping %s (already exists)\n", relPath)
+		// Check if needs update (missing or older)
+		needsUpdate := true
+		if destInfo, err := os.Stat(destPath); err == nil {
+			// If dest exists, check if source is newer
+			if info.ModTime().Before(destInfo.ModTime()) {
+				needsUpdate = false
+			}
+		}
+
+		if !needsUpdate {
 			return nil
 		}
 
@@ -97,6 +105,29 @@ func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
 	if err != nil {
 		fmt.Printf("Error walking source dir: %v\n", err)
 	}
+
+	// 2. Cleanup deleted files
+	fmt.Println("Cleaning up deleted files...")
+	err = filepath.Walk(destDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // ignore errors here
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(destDir, path)
+		if err != nil {
+			return nil
+		}
+
+		sourcePath := filepath.Join(sourceDir, relPath)
+		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+			fmt.Printf("Removing orphan file: %s\n", relPath)
+			os.Remove(path)
+		}
+		return nil
+	})
 }
 
 func main() {
