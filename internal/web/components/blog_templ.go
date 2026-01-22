@@ -46,7 +46,7 @@ func BlogList(posts []blog.Post) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-12\"><div class=\"text-center space-y-4\"><h1 class=\"text-4xl font-serif\" style=\"color: var(--color-text-primary);\">Journal</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div><p class=\"max-w-2xl mx-auto\" style=\"color: var(--color-text-secondary);\">Thoughts, stories, and adventures from the road.</p></div><div class=\"max-w-3xl mx-auto space-y-12\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-12 px-4 md:px-0\"><div class=\"text-center space-y-4\"><h1 class=\"text-4xl font-serif\" style=\"color: var(--color-text-primary);\">Journal</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div><p class=\"max-w-2xl mx-auto\" style=\"color: var(--color-text-secondary);\">Thoughts, stories, and adventures from the road.</p></div><div class=\"max-w-3xl mx-auto space-y-12\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

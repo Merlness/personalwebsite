@@ -2,9 +2,9 @@ package components
 
 templ About() {
 	@Layout("About Me | Merl Martin") {
-		<div class="max-w-4xl mx-auto space-y-12">
-			<img src="/assets/aboutme/spicy.jpg" x-show="theme === 'rhcp'" class="w-96 h-96 mx-auto mb-8 object-contain"/>
-			<img src="/assets/aboutme/profile.jpg" x-show="theme === 'default'" class="w-96 h-96 mx-auto mb-8 object-contain"/>
+		<div class="max-w-4xl mx-auto space-y-12 px-4 md:px-0">
+			<img src="/assets/aboutme/spicy.jpg" x-show="theme === 'rhcp'" class="w-full md:w-96 h-auto md:h-96 mx-auto mb-8 object-contain"/>
+			<img src="/assets/aboutme/profile.jpg" x-show="theme === 'default'" class="w-full md:w-96 h-auto md:h-96 mx-auto mb-8 object-contain"/>
 			<section class="space-y-6 text-center">
 				<h1 class="text-4xl font-serif" style="color: var(--color-text-primary);">About Me</h1>
 				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
