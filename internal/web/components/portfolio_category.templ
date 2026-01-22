@@ -98,20 +98,20 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                  @keydown.arrow-left.window="prevImage()">
                 
                 <!-- Close Button (Moved for better mobile access) -->
-                <button @click="closeLightbox()" class="absolute top-4 right-4 md:top-6 md:right-6 text-silver-400 hover:text-white z-50 p-4 bg-black/20 rounded-full backdrop-blur-sm">
+                <button @click.stop="closeLightbox()" class="absolute top-4 right-4 md:top-6 md:right-6 text-silver-400 hover:text-white z-50 p-4 bg-black/20 rounded-full backdrop-blur-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
 
                 <!-- Navigation Arrows -->
-                <button @click="prevImage()" class="absolute left-2 md:left-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors">
+                <button @click.stop="prevImage()" class="absolute left-2 md:left-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-12 md:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
                 
-                <button @click="nextImage()" class="absolute right-2 md:right-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors">
+                <button @click.stop="nextImage()" class="absolute right-2 md:right-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-12 md:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
@@ -128,7 +128,8 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                 <!-- Main Image -->
                 <div class="w-full h-full flex items-center justify-center p-4 md:p-12">
                     <template x-if="lightboxImage">
-                        <img :src="lightboxImage + '_w1600' + '.jpg'" class="max-w-full max-h-full object-contain shadow-2xl shadow-black" />
+                         <!-- Use x-bind:key to force re-render if needed, but here basic src swap is cleaner -->
+                        <img :src="lightboxImage + '_w1600' + '.jpg'" class="max-w-full max-h-full object-contain shadow-2xl shadow-black transition-opacity duration-300" />
                     </template>
                 </div>
             </div>
