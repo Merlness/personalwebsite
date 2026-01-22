@@ -69,10 +69,10 @@ func TestFilesystemService_GetCategories(t *testing.T) {
 
 		// Verify exact sort order: a_first, lake, mountains, z_last
 		expectedOrder := []string{
-			filepath.Join("Landscape", "a_first.jpg"),
-			filepath.Join("Landscape", "lake.png"),
-			filepath.Join("Landscape", "mountains.jpg"),
-			filepath.Join("Landscape", "z_last.jpg"),
+			filepath.Join("Landscape", "a_first"),
+			filepath.Join("Landscape", "lake"),
+			filepath.Join("Landscape", "mountains"),
+			filepath.Join("Landscape", "z_last"),
 		}
 
 		for i, img := range lCat.Images {
@@ -84,10 +84,8 @@ func TestFilesystemService_GetCategories(t *testing.T) {
 			}
 		}
 
-		// Check CoverImage (should be the last alphabetical one: z_last.jpg)
-		// Note: os.ReadDir returns sorted by name.
-		// a_first.jpg, lake.png, mountains.jpg, z_last.jpg
-		expectedCover := filepath.Join("Landscape", "z_last.jpg")
+		// Check CoverImage (should be the last alphabetical one: z_last)
+		expectedCover := filepath.Join("Landscape", "z_last")
 		if lCat.CoverImage != expectedCover {
 			t.Errorf("expected cover image %s, got %s", expectedCover, lCat.CoverImage)
 		}
@@ -101,8 +99,8 @@ func TestFilesystemService_GetCategories(t *testing.T) {
 		if len(pCat.Images) != 1 {
 			t.Errorf("expected 1 image in People, got %d", len(pCat.Images))
 		}
-		if len(pCat.Images) > 0 && pCat.Images[0] != filepath.Join("People", "portrait.jpg") {
-			t.Errorf("expected People/portrait.jpg, got %s", pCat.Images[0])
+		if len(pCat.Images) > 0 && pCat.Images[0] != filepath.Join("People", "portrait") {
+			t.Errorf("expected People/portrait, got %s", pCat.Images[0])
 		}
 	}
 }

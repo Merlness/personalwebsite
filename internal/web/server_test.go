@@ -14,15 +14,21 @@ type mockPortfolioService struct{}
 
 func (s *mockPortfolioService) GetCategories() ([]portfolio.Category, error) {
 	return []portfolio.Category{
-		{Name: "Landscape", Images: []string{"/assets/l.jpg"}},
-		{Name: "Wildlife", Images: []string{"/assets/w.jpg"}},
-		{Name: "Portraits", Images: []string{"/assets/p.jpg"}},
+		{Name: "Landscape", Images: []string{"/assets/l"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/l", CoverImageExt: ".jpg"},
+		{Name: "Wildlife", Images: []string{"/assets/w"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/w", CoverImageExt: ".jpg"},
+		{Name: "Portraits", Images: []string{"/assets/p"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/p", CoverImageExt: ".jpg"},
 	}, nil
 }
 
 func (s *mockPortfolioService) GetCategory(name string) (portfolio.Category, error) {
 	if name == "Landscape" {
-		return portfolio.Category{Name: "Landscape", Images: []string{"/assets/l.jpg"}}, nil
+		return portfolio.Category{
+			Name:          "Landscape",
+			Images:        []string{"/assets/l"},
+			ImageExts:     []string{".jpg"},
+			CoverImage:    "/assets/l",
+			CoverImageExt: ".jpg",
+		}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
 }
@@ -181,7 +187,7 @@ func (s *mockLinkedPhotosService) GetAllPosts() ([]blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1.jpg"},
+			LinkedPhotos: []string{"/images/p1"},
 		},
 	}, nil
 }
@@ -192,7 +198,7 @@ func (s *mockLinkedPhotosService) GetPost(slug string) (blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1.jpg"},
+			LinkedPhotos: []string{"/images/p1"},
 		}, nil
 	}
 	return blog.Post{}, blog.ErrPostNotFound
@@ -241,7 +247,7 @@ func TestPortfolio_LinkedStory(t *testing.T) {
 	// The map should contain "/images/p1.jpg": "photo-post"
 	// Since it's JSON encoded, it might look like: "/images/p1.jpg":"photo-post"
 
-	if !strings.Contains(body, `"/images/p1.jpg":"photo-post"`) {
+	if !strings.Contains(body, `"/images/p1":"photo-post"`) {
 		t.Errorf("expected body to contain photo mapping; got body: %s", body)
 	}
 }
@@ -275,13 +281,13 @@ type mockPortfolioServiceWithPhoto struct{}
 
 func (s *mockPortfolioServiceWithPhoto) GetCategories() ([]portfolio.Category, error) {
 	return []portfolio.Category{
-		{Name: "TestCat", Images: []string{"/images/p1.jpg"}},
+		{Name: "TestCat", Images: []string{"/images/p1"}, ImageExts: []string{".jpg"}},
 	}, nil
 }
 
 func (s *mockPortfolioServiceWithPhoto) GetCategory(name string) (portfolio.Category, error) {
 	if name == "TestCat" {
-		return portfolio.Category{Name: "TestCat", Images: []string{"/images/p1.jpg"}}, nil
+		return portfolio.Category{Name: "TestCat", Images: []string{"/images/p1"}, ImageExts: []string{".jpg"}}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
 }

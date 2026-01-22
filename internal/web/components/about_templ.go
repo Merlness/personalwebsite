@@ -45,19 +45,19 @@ func About() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SocialLink("mailto:contact@merlmartin.com", "Email").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SocialLink("mailto:merlfmartin@gmail.com", "Email").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SocialLink("https://github.com/", "GitHub").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SocialLink("https://github.com/merlness", "GitHub").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SocialLink("https://linkedin.com/in/", "LinkedIn").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SocialLink("https://linkedin.com/in/merlmartin", "LinkedIn").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SocialLink("https://instagram.com/", "Instagram").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SocialLink("https://instagram.com/merlness", "Instagram").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
