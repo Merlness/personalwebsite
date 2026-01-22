@@ -97,6 +97,9 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                  @keydown.arrow-right.window="nextImage()"
                  @keydown.arrow-left.window="prevImage()">
                 
+                <!-- Background Click Listener (to close) -->
+                <div class="absolute inset-0 z-0" @click="closeLightbox()"></div>
+
                 <!-- Close Button (Moved for better mobile access) -->
                 <button @click.stop="closeLightbox()" class="absolute top-4 right-4 md:top-6 md:right-6 text-silver-400 hover:text-white z-50 p-4 bg-black/20 rounded-full backdrop-blur-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
