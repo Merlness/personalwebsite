@@ -11,9 +11,11 @@ import (
 var ErrCategoryNotFound = errors.New("category not found")
 
 type Category struct {
-	Name       string
-	Images     []string
-	CoverImage string
+	Name          string
+	Images        []string
+	ImageExts     []string // Track extensions for each image
+	CoverImage    string
+	CoverImageExt string // Track extension for cover
 }
 
 type Service interface {
@@ -99,6 +101,8 @@ func (s *FilesystemService) scanCategory(categoryName string) (Category, error) 
 	}
 
 	var images []string
+	var exts []string
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -107,31 +111,52 @@ func (s *FilesystemService) scanCategory(categoryName string) (Category, error) 
 		name := entry.Name()
 		ext := strings.ToLower(filepath.Ext(name))
 
-		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" {
-			// Construct image URL
-			// Using filepath.Join to match test expectations for now which seems to expect file paths
-			// If webPathPrefix is provided, it will be prepended.
-			// The prompt said: webPathPrefix + "/" + CategoryName + "/" + Filename
-			// But for cross-platform compatibility and to match the test which uses filepath.Join,
-			// I'll stick to filepath.Join.
-			// Ideally I should ask, but I need to make tests pass.
+		// Skip specialized versions (e.g. _w600.jpg, _w1600.jpg)
+		if strings.Contains(name, "_w600") || strings.Contains(name, "_w1600") {
+			continue
+		}
 
-			imgPath := filepath.Join(s.webPathPrefix, categoryName, name)
+		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" {
+			// Store base path without extension to make template logic cleaner
+			baseName := strings.TrimSuffix(name, ext)
+			imgPath := filepath.Join(s.webPathPrefix, categoryName, baseName)
+
 			images = append(images, imgPath)
+			exts = append(exts, ext)
 		}
 	}
 
-	// Explicitly sort images to ensure consistent order (e.g. 1.jpg, 2.jpg)
-	sort.Strings(images)
+	// Sort images (and exts in parallel)
+	// We need a custom sort here
+	type imgWithExt struct {
+		path string
+		ext  string
+	}
+	combined := make([]imgWithExt, len(images))
+	for i := range images {
+		combined[i] = imgWithExt{images[i], exts[i]}
+	}
+	sort.Slice(combined, func(i, j int) bool {
+		return combined[i].path < combined[j].path
+	})
+
+	for i := range combined {
+		images[i] = combined[i].path
+		exts[i] = combined[i].ext
+	}
 
 	var coverImage string
+	var coverImageExt string
 	if len(images) > 0 {
 		coverImage = images[len(images)-1]
+		coverImageExt = exts[len(exts)-1]
 	}
 
 	return Category{
-		Name:       categoryName,
-		Images:     images,
-		CoverImage: coverImage,
+		Name:          categoryName,
+		Images:        images,
+		ImageExts:     exts,
+		CoverImage:    coverImage,
+		CoverImageExt: coverImageExt,
 	}, nil
 }

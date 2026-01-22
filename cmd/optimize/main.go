@@ -12,7 +12,7 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
+func optimizeDir(sourceDir, destDir string, quality int) {
 	fmt.Printf("Optimizing %s -> %s\n", sourceDir, destDir)
 
 	if _, err := os.Stat(sourceDir); os.IsNotExist(err) {
@@ -41,62 +41,81 @@ func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
 			return err
 		}
 
-		destPath := filepath.Join(destDir, relPath)
-		destDir := filepath.Dir(destPath)
-
-		// Create dest dir
-		if err := os.MkdirAll(destDir, 0755); err != nil {
-			return err
+		// Optimization targets
+		// 1. Original (optimized) - used as fallback
+		// 2. w600 - for grids
+		// 3. w1600 - for lightbox
+		targets := []struct {
+			suffix string
+			width  int
+		}{
+			{suffix: "", width: 2500},       // Base image, max 2500
+			{suffix: "_w600", width: 600},   // Grid thumbnail
+			{suffix: "_w1600", width: 1600}, // Lightbox view
 		}
 
-		// Check if needs update (missing or older)
-		needsUpdate := true
-		if destInfo, err := os.Stat(destPath); err == nil {
-			// If dest exists, check if source is newer
-			if info.ModTime().Before(destInfo.ModTime()) {
-				needsUpdate = false
+		for _, target := range targets {
+			// Construct destination filename
+			// e.g., image.jpg -> image.jpg (base)
+			// e.g., image.jpg -> image_w600.jpg
+			baseName := strings.TrimSuffix(relPath, filepath.Ext(relPath))
+			destName := baseName + target.suffix + ext
+			destPath := filepath.Join(destDir, destName)
+			destDir := filepath.Dir(destPath)
+
+			// Create dest dir
+			if err := os.MkdirAll(destDir, 0755); err != nil {
+				return err
 			}
-		}
 
-		if !needsUpdate {
-			return nil
-		}
+			// Check if needs update
+			needsUpdate := true
+			if destInfo, err := os.Stat(destPath); err == nil {
+				if info.ModTime().Before(destInfo.ModTime()) {
+					needsUpdate = false
+				}
+			}
 
-		fmt.Printf("Processing %s... ", relPath)
+			if !needsUpdate {
+				continue
+			}
 
-		// Open image
-		src, err := imaging.Open(path)
-		if err != nil {
-			fmt.Printf("Failed to open: %v\n", err)
-			return nil
-		}
+			fmt.Printf("Processing %s (%s)... ", relPath, target.suffix)
 
-		// Resize if larger than maxWidth
-		var dst *image.NRGBA
-		if src.Bounds().Dx() > maxWidth {
-			dst = imaging.Resize(src, maxWidth, 0, imaging.Lanczos)
-		} else {
-			dst = imaging.Clone(src)
-		}
+			// Open image (only once ideally, but simple loop here)
+			src, err := imaging.Open(path)
+			if err != nil {
+				fmt.Printf("Failed to open: %v\n", err)
+				return nil
+			}
 
-		// Save
-		file, err := os.Create(destPath)
-		if err != nil {
-			fmt.Printf("Failed to create file: %v\n", err)
-			return nil
-		}
-		defer file.Close()
+			// Resize
+			var dst *image.NRGBA
+			if src.Bounds().Dx() > target.width {
+				dst = imaging.Resize(src, target.width, 0, imaging.Lanczos)
+			} else {
+				dst = imaging.Clone(src)
+			}
 
-		if ext == ".png" {
-			err = png.Encode(file, dst)
-		} else {
-			err = jpeg.Encode(file, dst, &jpeg.Options{Quality: quality})
-		}
+			// Save
+			file, err := os.Create(destPath)
+			if err != nil {
+				fmt.Printf("Failed to create file: %v\n", err)
+				continue
+			}
 
-		if err != nil {
-			fmt.Printf("Failed to save: %v\n", err)
-		} else {
-			fmt.Println("Done")
+			if ext == ".png" {
+				err = png.Encode(file, dst)
+			} else {
+				err = jpeg.Encode(file, dst, &jpeg.Options{Quality: quality})
+			}
+			file.Close()
+
+			if err != nil {
+				fmt.Printf("Failed to save: %v\n", err)
+			} else {
+				fmt.Println("Done")
+			}
 		}
 
 		return nil
@@ -106,37 +125,14 @@ func optimizeDir(sourceDir, destDir string, maxWidth, quality int) {
 		fmt.Printf("Error walking source dir: %v\n", err)
 	}
 
-	// 2. Cleanup deleted files
-	fmt.Println("Cleaning up deleted files...")
-	err = filepath.Walk(destDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // ignore errors here
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(destDir, path)
-		if err != nil {
-			return nil
-		}
-
-		sourcePath := filepath.Join(sourceDir, relPath)
-		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-			fmt.Printf("Removing orphan file: %s\n", relPath)
-			os.Remove(path)
-		}
-		return nil
-	})
+	// 2. Cleanup (Simplified for now - just manual for safety in this change)
 }
 
 func main() {
-	// Max width for "high quality" web display
-	maxWidth := 2500
 	jpegQuality := 85
 
-	optimizeDir("content/portfolio", "content/portfolio_optimized", maxWidth, jpegQuality)
-	optimizeDir("content/aboutme", "content/aboutme_optimized", maxWidth, jpegQuality)
+	optimizeDir("content/portfolio", "content/portfolio_optimized", jpegQuality)
+	optimizeDir("content/aboutme", "content/aboutme_optimized", jpegQuality)
 
-	fmt.Println("Optimization complete. You can now commit the optimized directories.")
+	fmt.Println("Optimization complete.")
 }
