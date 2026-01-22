@@ -9,28 +9,30 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
         <div x-data="{
             images: window.categoryData.images,
             photoToBlog: window.categoryData.photoToBlog,
-            lightboxImage: null,
+            lightboxOpen: false,
             lightboxIndex: 0,
+            
+            get lightboxImage() {
+                return this.images[this.lightboxIndex];
+            },
             
             openLightbox(index) {
                 this.lightboxIndex = index;
-                this.lightboxImage = this.images[index];
+                this.lightboxOpen = true;
                 document.body.style.overflow = 'hidden';
             },
 
             closeLightbox() {
-                this.lightboxImage = null;
+                this.lightboxOpen = false;
                 document.body.style.overflow = '';
             },
 
             nextImage() {
                 this.lightboxIndex = (this.lightboxIndex + 1) % this.images.length;
-                this.lightboxImage = this.images[this.lightboxIndex];
             },
 
             prevImage() {
                 this.lightboxIndex = (this.lightboxIndex - 1 + this.images.length) % this.images.length;
-                this.lightboxImage = this.images[this.lightboxIndex];
             }
         }" class="min-h-screen">
             
@@ -85,7 +87,7 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
             </div>
 
             <!-- Lightbox Modal (Single Image) -->
-            <div x-show="lightboxImage" 
+            <div x-show="lightboxOpen" 
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100"
@@ -130,10 +132,7 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
 
                 <!-- Main Image -->
                 <div class="w-full h-full flex items-center justify-center p-4 md:p-12">
-                    <template x-if="lightboxImage">
-                         <!-- Use x-bind:key to force re-render if needed, but here basic src swap is cleaner -->
-                        <img :src="lightboxImage + '_w1600' + '.jpg'" class="max-w-full max-h-full object-contain shadow-2xl shadow-black transition-opacity duration-300" />
-                    </template>
+                    <img :src="lightboxImage + '_w1600' + '.jpg'" class="max-w-full max-h-full object-contain shadow-2xl shadow-black" />
                 </div>
             </div>
 

@@ -48,14 +48,14 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div x-data=\"{\n            images: window.categoryData.images,\n            photoToBlog: window.categoryData.photoToBlog,\n            lightboxImage: null,\n            lightboxIndex: 0,\n            \n            openLightbox(index) {\n                this.lightboxIndex = index;\n                this.lightboxImage = this.images[index];\n                document.body.style.overflow = 'hidden';\n            },\n\n            closeLightbox() {\n                this.lightboxImage = null;\n                document.body.style.overflow = '';\n            },\n\n            nextImage() {\n                this.lightboxIndex = (this.lightboxIndex + 1) % this.images.length;\n                this.lightboxImage = this.images[this.lightboxIndex];\n            },\n\n            prevImage() {\n                this.lightboxIndex = (this.lightboxIndex - 1 + this.images.length) % this.images.length;\n                this.lightboxImage = this.images[this.lightboxIndex];\n            }\n        }\" class=\"min-h-screen\"><div class=\"p-4 md:p-8\"><!-- Header --><div class=\"flex justify-between items-center mb-8 sticky top-0 backdrop-blur py-4 z-10 border-b\" style=\"background-color: var(--color-bg-primary); border-color: var(--color-border);\"><h1 class=\"text-3xl font-serif\" style=\"color: var(--color-text-primary);\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div x-data=\"{\n            images: window.categoryData.images,\n            photoToBlog: window.categoryData.photoToBlog,\n            lightboxOpen: false,\n            lightboxIndex: 0,\n            \n            get lightboxImage() {\n                return this.images[this.lightboxIndex];\n            },\n            \n            openLightbox(index) {\n                this.lightboxIndex = index;\n                this.lightboxOpen = true;\n                document.body.style.overflow = 'hidden';\n            },\n\n            closeLightbox() {\n                this.lightboxOpen = false;\n                document.body.style.overflow = '';\n            },\n\n            nextImage() {\n                this.lightboxIndex = (this.lightboxIndex + 1) % this.images.length;\n            },\n\n            prevImage() {\n                this.lightboxIndex = (this.lightboxIndex - 1 + this.images.length) % this.images.length;\n            }\n        }\" class=\"min-h-screen\"><div class=\"p-4 md:p-8\"><!-- Header --><div class=\"flex justify-between items-center mb-8 sticky top-0 backdrop-blur py-4 z-10 border-b\" style=\"background-color: var(--color-bg-primary); border-color: var(--color-border);\"><h1 class=\"text-3xl font-serif\" style=\"color: var(--color-text-primary);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(category.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 40, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 42, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -73,7 +73,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("openLightbox(%d)", i))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 52, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 54, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -86,7 +86,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(img + "_w600" + templ.EscapeString(category.ImageExts[i]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 53, Col: 96}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 55, Col: 96}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -110,7 +110,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 					var templ_7745c5c3_Var6 templ.SafeURL
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/portfolio/" + cat.Name))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 69, Col: 81}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 71, Col: 81}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -128,7 +128,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 						var templ_7745c5c3_Var7 string
 						templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(cat.CoverImage + "_w600" + templ.EscapeString(cat.CoverImageExt))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 71, Col: 115}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 73, Col: 115}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 						if templ_7745c5c3_Err != nil {
@@ -141,7 +141,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 						var templ_7745c5c3_Var8 string
 						templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(cat.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 71, Col: 132}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 73, Col: 132}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 						if templ_7745c5c3_Err != nil {
@@ -164,7 +164,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(cat.Name)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 78, Col: 169}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio_category.templ`, Line: 80, Col: 169}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -176,7 +176,7 @@ func PortfolioCategory(category portfolio.Category, allCategories []portfolio.Ca
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div></div></div><!-- Lightbox Modal (Single Image) --><div x-show=\"lightboxImage\" x-transition:enter=\"transition ease-out duration-300\" x-transition:enter-start=\"opacity-0\" x-transition:enter-end=\"opacity-100\" x-transition:leave=\"transition ease-in duration-200\" x-transition:leave-start=\"opacity-100\" x-transition:leave-end=\"opacity-0\" class=\"fixed inset-0 z-50 bg-black flex items-center justify-center\" style=\"display: none;\" @keydown.escape.window=\"closeLightbox()\" @keydown.arrow-right.window=\"nextImage()\" @keydown.arrow-left.window=\"prevImage()\"><!-- Background Click Listener (to close) --><div class=\"absolute inset-0 z-0\" @click=\"closeLightbox()\"></div><!-- Close Button (Moved for better mobile access) --><button @click.stop=\"closeLightbox()\" class=\"absolute top-4 right-4 md:top-6 md:right-6 text-silver-400 hover:text-white z-50 p-4 bg-black/20 rounded-full backdrop-blur-sm\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 md:h-8 md:w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button><!-- Navigation Arrows --><button @click.stop=\"prevImage()\" class=\"absolute left-2 md:left-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8 md:h-12 md:w-12\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 19l-7-7 7-7\"></path></svg></button> <button @click.stop=\"nextImage()\" class=\"absolute right-2 md:right-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8 md:h-12 md:w-12\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg></button><!-- Read Story Button --><template x-if=\"lightboxImage && photoToBlog[lightboxImage]\"><a :href=\"'/blog/' + photoToBlog[lightboxImage]\" class=\"absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 inline-block border border-silver-400 bg-black/50 backdrop-blur text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors\">Read Story</a></template><!-- Main Image --><div class=\"w-full h-full flex items-center justify-center p-4 md:p-12\"><template x-if=\"lightboxImage\"><!-- Use x-bind:key to force re-render if needed, but here basic src swap is cleaner --><img :src=\"lightboxImage + '_w1600' + '.jpg'\" class=\"max-w-full max-h-full object-contain shadow-2xl shadow-black transition-opacity duration-300\"></template></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div></div></div><!-- Lightbox Modal (Single Image) --><div x-show=\"lightboxOpen\" x-transition:enter=\"transition ease-out duration-300\" x-transition:enter-start=\"opacity-0\" x-transition:enter-end=\"opacity-100\" x-transition:leave=\"transition ease-in duration-200\" x-transition:leave-start=\"opacity-100\" x-transition:leave-end=\"opacity-0\" class=\"fixed inset-0 z-50 bg-black flex items-center justify-center\" style=\"display: none;\" @keydown.escape.window=\"closeLightbox()\" @keydown.arrow-right.window=\"nextImage()\" @keydown.arrow-left.window=\"prevImage()\"><!-- Background Click Listener (to close) --><div class=\"absolute inset-0 z-0\" @click=\"closeLightbox()\"></div><!-- Close Button (Moved for better mobile access) --><button @click.stop=\"closeLightbox()\" class=\"absolute top-4 right-4 md:top-6 md:right-6 text-silver-400 hover:text-white z-50 p-4 bg-black/20 rounded-full backdrop-blur-sm\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-6 w-6 md:h-8 md:w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button><!-- Navigation Arrows --><button @click.stop=\"prevImage()\" class=\"absolute left-2 md:left-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8 md:h-12 md:w-12\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 19l-7-7 7-7\"></path></svg></button> <button @click.stop=\"nextImage()\" class=\"absolute right-2 md:right-8 text-silver-400 hover:text-white p-2 md:p-4 z-50 hover:bg-white/5 rounded-full transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8 md:h-12 md:w-12\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg></button><!-- Read Story Button --><template x-if=\"lightboxImage && photoToBlog[lightboxImage]\"><a :href=\"'/blog/' + photoToBlog[lightboxImage]\" class=\"absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 inline-block border border-silver-400 bg-black/50 backdrop-blur text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors\">Read Story</a></template><!-- Main Image --><div class=\"w-full h-full flex items-center justify-center p-4 md:p-12\"><img :src=\"lightboxImage + '_w1600' + '.jpg'\" class=\"max-w-full max-h-full object-contain shadow-2xl shadow-black\"></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
