@@ -71,14 +71,8 @@ func generatePortfolio(out string, pService portfolio.Service, bService blog.Ser
 
 	// Main Portfolio Page
 	categories, _ := pService.GetCategories()
-	// Build photoToBlog map (for reading stories from photos)
-	photoToBlog := make(map[string]string)
 	posts, _ := bService.GetAllPosts()
-	for _, post := range posts {
-		for _, photo := range post.LinkedPhotos {
-			photoToBlog[photo] = post.Slug
-		}
-	}
+	photoToBlog := blog.BuildPhotoToBlogMap(posts)
 
 	f, _ := os.Create(filepath.Join(out, "portfolio", "index.html"))
 	components.Portfolio(categories, photoToBlog).Render(context.Background(), f)

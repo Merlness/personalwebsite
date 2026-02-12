@@ -187,7 +187,7 @@ func (s *mockLinkedPhotosService) GetAllPosts() ([]blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1"},
+			LinkedPhotos: []string{"/images/p1.jpg"},
 		},
 	}, nil
 }
@@ -198,7 +198,7 @@ func (s *mockLinkedPhotosService) GetPost(slug string) (blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1"},
+			LinkedPhotos: []string{"/images/p1.jpg"},
 		}, nil
 	}
 	return blog.Post{}, blog.ErrPostNotFound

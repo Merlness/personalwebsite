@@ -59,15 +59,12 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service) htt
 			return
 		}
 
-		// Build photoToBlog map (reuse logic)
-		photoToBlog := make(map[string]string)
+		var photoToBlog map[string]string
 		posts, err := blogService.GetAllPosts()
 		if err == nil {
-			for _, post := range posts {
-				for _, photo := range post.LinkedPhotos {
-					photoToBlog[photo] = post.Slug
-				}
-			}
+			photoToBlog = blog.BuildPhotoToBlogMap(posts)
+		} else {
+			photoToBlog = make(map[string]string)
 		}
 
 		component := components.PortfolioCategory(category, allCategories, photoToBlog)

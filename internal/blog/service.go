@@ -2,6 +2,8 @@ package blog
 
 import (
 	"errors"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -50,4 +52,15 @@ func (s *memoryService) GetPost(slug string) (Post, error) {
 		}
 	}
 	return Post{}, ErrPostNotFound
+}
+
+func BuildPhotoToBlogMap(posts []Post) map[string]string {
+	photoToBlog := make(map[string]string)
+	for _, post := range posts {
+		for _, photo := range post.LinkedPhotos {
+			key := strings.TrimSuffix(photo, filepath.Ext(photo))
+			photoToBlog[key] = post.Slug
+		}
+	}
+	return photoToBlog
 }
