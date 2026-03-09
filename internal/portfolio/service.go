@@ -10,12 +10,15 @@ import (
 
 var ErrCategoryNotFound = errors.New("category not found")
 
+type Image struct {
+	Path string
+	Ext  string
+}
+
 type Category struct {
-	Name          string
-	Images        []string
-	ImageExts     []string // Track extensions for each image
-	CoverImage    string
-	CoverImageExt string // Track extension for cover
+	Name       string
+	Images     []Image
+	CoverImage Image
 }
 
 type Service interface {
@@ -23,19 +26,19 @@ type Service interface {
 	GetCategory(name string) (Category, error)
 }
 
-type FilesystemService struct {
+type filesystemService struct {
 	root          string
 	webPathPrefix string
 }
 
-func NewFilesystemService(root, webPathPrefix string) *FilesystemService {
-	return &FilesystemService{
+func NewFilesystemService(root, webPathPrefix string) Service {
+	return &filesystemService{
 		root:          root,
 		webPathPrefix: webPathPrefix,
 	}
 }
 
-func (s *FilesystemService) GetCategory(name string) (Category, error) {
+func (s *filesystemService) GetCategory(name string) (Category, error) {
 	// Security check: simple check to prevent directory traversal
 	if strings.Contains(name, "..") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return Category{}, ErrCategoryNotFound
@@ -58,20 +61,14 @@ func (s *FilesystemService) GetCategory(name string) (Category, error) {
 	return s.scanCategory(name)
 }
 
-func (s *FilesystemService) GetCategories() ([]Category, error) {
-	// Define hardcoded sort order
-	order := []string{"Landscape", "People", "Wildlife", "Structures"}
+var preferredOrder = []string{"Landscape", "People", "Wildlife", "Structures"}
 
-	var categories []Category
-
-	// Read subdirectories of rootPath
+func (s *filesystemService) GetCategories() ([]Category, error) {
 	entries, err := os.ReadDir(s.root)
 	if err != nil {
-		// If root doesn't exist or error, return error
 		return nil, err
 	}
 
-	// Create a map of existing directories for quick lookup
 	existingDirs := make(map[string]bool)
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -79,29 +76,44 @@ func (s *FilesystemService) GetCategories() ([]Category, error) {
 		}
 	}
 
-	// Iterate based on sort order
-	for _, catName := range order {
+	var categories []Category
+
+	for _, catName := range preferredOrder {
 		if existingDirs[catName] {
 			cat, err := s.scanCategory(catName)
 			if err != nil {
 				return nil, err
 			}
 			categories = append(categories, cat)
+			delete(existingDirs, catName)
 		}
+	}
+
+	remaining := make([]string, 0, len(existingDirs))
+	for dirName := range existingDirs {
+		remaining = append(remaining, dirName)
+	}
+	sort.Strings(remaining)
+
+	for _, catName := range remaining {
+		cat, err := s.scanCategory(catName)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, cat)
 	}
 
 	return categories, nil
 }
 
-func (s *FilesystemService) scanCategory(categoryName string) (Category, error) {
+func (s *filesystemService) scanCategory(categoryName string) (Category, error) {
 	dirPath := filepath.Join(s.root, categoryName)
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return Category{}, err
 	}
 
-	var images []string
-	var exts []string
+	var images []Image
 
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -111,52 +123,30 @@ func (s *FilesystemService) scanCategory(categoryName string) (Category, error) 
 		name := entry.Name()
 		ext := strings.ToLower(filepath.Ext(name))
 
-		// Skip specialized versions (e.g. _w600.jpg, _w1600.jpg)
 		if strings.Contains(name, "_w600") || strings.Contains(name, "_w1600") {
 			continue
 		}
 
 		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" {
-			// Store base path without extension to make template logic cleaner
 			baseName := strings.TrimSuffix(name, ext)
 			imgPath := filepath.Join(s.webPathPrefix, categoryName, baseName)
 
-			images = append(images, imgPath)
-			exts = append(exts, ext)
+			images = append(images, Image{Path: imgPath, Ext: ext})
 		}
 	}
 
-	// Sort images (and exts in parallel)
-	// We need a custom sort here
-	type imgWithExt struct {
-		path string
-		ext  string
-	}
-	combined := make([]imgWithExt, len(images))
-	for i := range images {
-		combined[i] = imgWithExt{images[i], exts[i]}
-	}
-	sort.Slice(combined, func(i, j int) bool {
-		return combined[i].path < combined[j].path
+	sort.Slice(images, func(idx, jdx int) bool {
+		return images[idx].Path < images[jdx].Path
 	})
 
-	for i := range combined {
-		images[i] = combined[i].path
-		exts[i] = combined[i].ext
-	}
-
-	var coverImage string
-	var coverImageExt string
+	var coverImage Image
 	if len(images) > 0 {
 		coverImage = images[len(images)-1]
-		coverImageExt = exts[len(exts)-1]
 	}
 
 	return Category{
-		Name:          categoryName,
-		Images:        images,
-		ImageExts:     exts,
-		CoverImage:    coverImage,
-		CoverImageExt: coverImageExt,
+		Name:       categoryName,
+		Images:     images,
+		CoverImage: coverImage,
 	}, nil
 }

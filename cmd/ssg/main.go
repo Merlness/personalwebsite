@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"personalwebsite/internal/blog"
@@ -11,106 +12,89 @@ import (
 	"personalwebsite/internal/web/components"
 )
 
-func main() {
-	outputDir := "dist"
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
-	fmt.Println("Building static site...")
-
-	// Cleanup
-	os.RemoveAll(outputDir)
-	os.MkdirAll(outputDir, 0755)
-
-	// Setup Services
-	// Note: We point to the OPTIMIZED directory now
-	portfolioRoot := "content/portfolio_optimized"
-	if _, err := os.Stat(portfolioRoot); os.IsNotExist(err) {
-		fmt.Println("Error: optimized portfolio not found. Run 'go run cmd/optimize/main.go' first.")
-		os.Exit(1)
+func renderPage(outputPath string, render func(context.Context, io.Writer) error) error {
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
-	blogService := blog.NewFilesystemService("content/blog")
-	// Web path prefix must be relative from root of site
-	portfolioService := portfolio.NewFilesystemService(portfolioRoot, "/assets/portfolio")
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("creating file %s: %w", outputPath, err)
+	}
+	defer file.Close()
 
-	// 1. Generate Pages
-	generateHome(outputDir)
-	generateAbout(outputDir)
-	generatePortfolio(outputDir, portfolioService, blogService)
-	generateBlog(outputDir, blogService)
-
-	// 2. Copy Assets
-	copyDir("internal/assets", filepath.Join(outputDir, "assets"))
-	copyDir("content/portfolio_optimized", filepath.Join(outputDir, "assets/portfolio"))
-	copyDir("content/aboutme_optimized", filepath.Join(outputDir, "assets/aboutme"))
-
-	// 3. Create CNAME if needed (optional)
-	os.WriteFile(filepath.Join(outputDir, "CNAME"), []byte("merlmartin.com"), 0644)
-
-	// 4. Create .nojekyll to prevent GitHub from ignoring underscore files
-	os.WriteFile(filepath.Join(outputDir, ".nojekyll"), []byte(""), 0644)
-
-	fmt.Println("Build complete! The 'dist' folder is ready to deploy.")
+	return render(context.Background(), file)
 }
 
-func generateHome(out string) {
-	f, _ := os.Create(filepath.Join(out, "index.html"))
-	defer f.Close()
-	components.Home().Render(context.Background(), f)
+func generateHome(out string) error {
+	return renderPage(filepath.Join(out, "index.html"), components.Home().Render)
 }
 
-func generateAbout(out string) {
-	// Create directory if needed for pretty URLs (about/index.html)
-	os.MkdirAll(filepath.Join(out, "about"), 0755)
-	f, _ := os.Create(filepath.Join(out, "about", "index.html"))
-	defer f.Close()
-	components.About().Render(context.Background(), f)
+func generateAbout(out string) error {
+	return renderPage(filepath.Join(out, "about", "index.html"), components.About().Render)
 }
 
-func generatePortfolio(out string, pService portfolio.Service, bService blog.Service) {
-	os.MkdirAll(filepath.Join(out, "portfolio"), 0755)
+func generatePortfolio(out string, pService portfolio.Service, bService blog.Service) error {
+	categories, err := pService.GetCategories()
+	if err != nil {
+		return fmt.Errorf("loading portfolio categories: %w", err)
+	}
 
-	// Main Portfolio Page
-	categories, _ := pService.GetCategories()
-	posts, _ := bService.GetAllPosts()
+	posts, err := bService.GetAllPosts()
+	if err != nil {
+		return fmt.Errorf("loading blog posts: %w", err)
+	}
+
 	photoToBlog := blog.BuildPhotoToBlogMap(posts)
 
-	f, _ := os.Create(filepath.Join(out, "portfolio", "index.html"))
-	components.Portfolio(categories, photoToBlog).Render(context.Background(), f)
-	f.Close()
-
-	// Category Pages
-	for _, cat := range categories {
-		catDir := filepath.Join(out, "portfolio", cat.Name)
-		os.MkdirAll(catDir, 0755)
-
-		f, _ := os.Create(filepath.Join(catDir, "index.html"))
-		// Re-fetch detailed category to ensure we have images
-		fullCat, _ := pService.GetCategory(cat.Name)
-
-		components.PortfolioCategory(fullCat, categories, photoToBlog).Render(context.Background(), f)
-		f.Close()
+	err = renderPage(filepath.Join(out, "portfolio", "index.html"), components.Portfolio(categories, photoToBlog).Render)
+	if err != nil {
+		return err
 	}
+
+	for _, cat := range categories {
+		fullCat, err := pService.GetCategory(cat.Name)
+		if err != nil {
+			return fmt.Errorf("loading category %s: %w", cat.Name, err)
+		}
+
+		pagePath := filepath.Join(out, "portfolio", cat.Name, "index.html")
+		err = renderPage(pagePath, components.PortfolioCategory(fullCat, categories, photoToBlog).Render)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func generateBlog(out string, bService blog.Service) {
-	os.MkdirAll(filepath.Join(out, "blog"), 0755)
-
-	posts, _ := bService.GetAllPosts()
-
-	// Blog Index
-	f, _ := os.Create(filepath.Join(out, "blog", "index.html"))
-	components.BlogList(posts).Render(context.Background(), f)
-	f.Close()
-
-	// Individual Posts
-	for _, post := range posts {
-		postDir := filepath.Join(out, "blog", post.Slug)
-		os.MkdirAll(postDir, 0755)
-
-		f, _ := os.Create(filepath.Join(postDir, "index.html"))
-		components.BlogPost(post).Render(context.Background(), f)
-		f.Close()
+func generateBlog(out string, bService blog.Service) error {
+	posts, err := bService.GetAllPosts()
+	if err != nil {
+		return fmt.Errorf("loading blog posts: %w", err)
 	}
+
+	err = renderPage(filepath.Join(out, "blog", "index.html"), components.BlogList(posts).Render)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		pagePath := filepath.Join(out, "blog", post.Slug, "index.html")
+		err = renderPage(pagePath, components.BlogPost(post).Render)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func copyDir(src, dst string) error {
@@ -130,7 +114,6 @@ func copyDir(src, dst string) error {
 			return os.MkdirAll(destPath, info.Mode())
 		}
 
-		// Copy file
 		srcFile, err := os.Open(path)
 		if err != nil {
 			return err
@@ -146,4 +129,35 @@ func copyDir(src, dst string) error {
 		_, err = io.Copy(dstFile, srcFile)
 		return err
 	})
+}
+
+func main() {
+	outputDir := "dist"
+
+	fmt.Println("Building static site...")
+
+	os.RemoveAll(outputDir)
+	fatal(os.MkdirAll(outputDir, 0755))
+
+	portfolioRoot := "content/portfolio_optimized"
+	if _, err := os.Stat(portfolioRoot); os.IsNotExist(err) {
+		log.Fatal("optimized portfolio not found. Run 'go run cmd/optimize/main.go' first.")
+	}
+
+	blogService := blog.NewFilesystemService("content/blog")
+	portfolioService := portfolio.NewFilesystemService(portfolioRoot, "/assets/portfolio")
+
+	fatal(generateHome(outputDir))
+	fatal(generateAbout(outputDir))
+	fatal(generatePortfolio(outputDir, portfolioService, blogService))
+	fatal(generateBlog(outputDir, blogService))
+
+	fatal(copyDir("internal/assets", filepath.Join(outputDir, "assets")))
+	fatal(copyDir("content/portfolio_optimized", filepath.Join(outputDir, "assets/portfolio")))
+	fatal(copyDir("content/aboutme_optimized", filepath.Join(outputDir, "assets/aboutme")))
+
+	fatal(os.WriteFile(filepath.Join(outputDir, "CNAME"), []byte("merlmartin.com"), 0644))
+	fatal(os.WriteFile(filepath.Join(outputDir, ".nojekyll"), []byte(""), 0644))
+
+	fmt.Println("Build complete! The 'dist' folder is ready to deploy.")
 }

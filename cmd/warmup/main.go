@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"personalwebsite/internal/config"
 	"personalwebsite/internal/images"
 	"strings"
 	"time"
@@ -12,12 +13,7 @@ import (
 func main() {
 	start := time.Now()
 
-	// Configuration
-	// Assume running from project root
-	contentRoot := "content/portfolio_optimized"
-	if _, err := os.Stat(contentRoot); os.IsNotExist(err) {
-		contentRoot = "content/portfolio"
-	}
+	contentRoot := config.ResolvePortfolioRoot()
 
 	cacheRoot := os.Getenv("CACHE_DIR")
 	if cacheRoot == "" {

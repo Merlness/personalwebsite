@@ -4,104 +4,112 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"personalwebsite/internal/blog"
 	"personalwebsite/internal/portfolio"
 	"strings"
 	"testing"
 )
 
+func testServerConfig(t *testing.T) ServerConfig {
+	t.Helper()
+	return ServerConfig{
+		PortfolioAssetsPath: t.TempDir(),
+		AboutmeAssetsPath:   t.TempDir(),
+		CSSAssetsPath:       "../../internal/assets",
+	}
+}
+
 type mockPortfolioService struct{}
 
 func (s *mockPortfolioService) GetCategories() ([]portfolio.Category, error) {
 	return []portfolio.Category{
-		{Name: "Landscape", Images: []string{"/assets/l"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/l", CoverImageExt: ".jpg"},
-		{Name: "Wildlife", Images: []string{"/assets/w"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/w", CoverImageExt: ".jpg"},
-		{Name: "Portraits", Images: []string{"/assets/p"}, ImageExts: []string{".jpg"}, CoverImage: "/assets/p", CoverImageExt: ".jpg"},
+		{Name: "Landscape", Images: []portfolio.Image{{Path: "/assets/l", Ext: ".jpg"}}, CoverImage: portfolio.Image{Path: "/assets/l", Ext: ".jpg"}},
+		{Name: "Wildlife", Images: []portfolio.Image{{Path: "/assets/w", Ext: ".jpg"}}, CoverImage: portfolio.Image{Path: "/assets/w", Ext: ".jpg"}},
+		{Name: "Portraits", Images: []portfolio.Image{{Path: "/assets/p", Ext: ".jpg"}}, CoverImage: portfolio.Image{Path: "/assets/p", Ext: ".jpg"}},
 	}, nil
 }
 
 func (s *mockPortfolioService) GetCategory(name string) (portfolio.Category, error) {
 	if name == "Landscape" {
 		return portfolio.Category{
-			Name:          "Landscape",
-			Images:        []string{"/assets/l"},
-			ImageExts:     []string{".jpg"},
-			CoverImage:    "/assets/l",
-			CoverImageExt: ".jpg",
+			Name:       "Landscape",
+			Images:     []portfolio.Image{{Path: "/assets/l", Ext: ".jpg"}},
+			CoverImage: portfolio.Image{Path: "/assets/l", Ext: ".jpg"},
 		}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
 }
 
 func TestServer(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	if !strings.Contains(w.Body.String(), "<title>Personal Website</title>") {
-		t.Errorf("expected title 'Personal Website'; got body: %s", w.Body.String())
+	if !strings.Contains(recorder.Body.String(), "<title>Personal Website</title>") {
+		t.Errorf("expected title 'Personal Website'; got body: %s", recorder.Body.String())
 	}
 }
 
 func TestBlogPost(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/blog/first-post", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	body := w.Body.String()
+	body := recorder.Body.String()
 	required := []string{"My First Post", "Here is the full content"}
-	for _, s := range required {
-		if !strings.Contains(body, s) {
-			t.Errorf("expected body to contain '%s'; got body: %s", s, body)
+	for _, expected := range required {
+		if !strings.Contains(body, expected) {
+			t.Errorf("expected body to contain '%s'; got body: %s", expected, body)
 		}
 	}
 }
 
 func TestCSSAssets(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/assets/css/output.css", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
+	contentType := recorder.Header().Get("Content-Type")
 	if contentType != "text/css" {
 		t.Errorf("expected content-type text/css; got %s", contentType)
 	}
 }
 
 func TestAbout(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	body := w.Body.String()
+	body := recorder.Body.String()
 	if !strings.Contains(body, "<title>About Me | Merl Martin</title>") {
 		t.Errorf("expected title 'About Me | Merl Martin'; got body: %s", body)
 	}
@@ -110,28 +118,27 @@ func TestAbout(t *testing.T) {
 		t.Errorf("expected body to contain 'Contact'; got body: %s", body)
 	}
 
-	// Check for the new image URL
 	expectedImage := "spicy.jpg"
 	if !strings.Contains(body, expectedImage) {
-		t.Errorf("expected body to contain image '%s'; got body snippet: %s", expectedImage, body[:200]) // snippet to avoid huge log
+		t.Errorf("expected body to contain image '%s'; got body snippet: %s", expectedImage, body[:200])
 	}
 }
 
 func TestPortfolio(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/portfolio", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	body := w.Body.String()
-	categories := []string{"Landscape", "Wildlife", "Portraits"}
-	for _, cat := range categories {
+	body := recorder.Body.String()
+	expectedCategories := []string{"Landscape", "Wildlife", "Portraits"}
+	for _, cat := range expectedCategories {
 		if !strings.Contains(body, cat) {
 			t.Errorf("expected body to contain category '%s'; got body: %s", cat, body)
 		}
@@ -139,42 +146,33 @@ func TestPortfolio(t *testing.T) {
 }
 
 func TestPortfolioAssets(t *testing.T) {
-	// Setup: Create a temporary file in content/portfolio
-	// We handle the path relative to where tests run (internal/web)
-	contentDir := "../../content/portfolio"
+	portfolioDir := t.TempDir()
 
-	// Ensure the directory exists for the test
-	if err := os.MkdirAll(contentDir, 0755); err != nil {
-		// Try fallback if relative path fails (though MkdirAll usually handles it)
-		contentDir = "content/portfolio"
-		if err := os.MkdirAll(contentDir, 0755); err != nil {
-			cwd, _ := os.Getwd()
-			t.Fatalf("Could not create test directory. Current dir: %s. Error: %v", cwd, err)
-		}
-	}
-
-	testFile := "test.txt"
-	fullPath := contentDir + "/" + testFile
-	err := os.WriteFile(fullPath, []byte("test content"), 0644)
-	if err != nil {
+	testContent := "test content"
+	testFilePath := filepath.Join(portfolioDir, "test.txt")
+	if err := os.WriteFile(testFilePath, []byte(testContent), 0644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
-	defer os.Remove(fullPath)
 
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
-
-	// Test serving from content/portfolio
-	req := httptest.NewRequest(http.MethodGet, "/assets/portfolio/test.txt", nil)
-	w := httptest.NewRecorder()
-
-	srv.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	cfg := ServerConfig{
+		PortfolioAssetsPath: portfolioDir,
+		AboutmeAssetsPath:   t.TempDir(),
+		CSSAssetsPath:       "../../internal/assets",
 	}
 
-	body := w.Body.String()
-	if strings.TrimSpace(body) != "test content" {
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, cfg)
+
+	req := httptest.NewRequest(http.MethodGet, "/assets/portfolio/test.txt", nil)
+	recorder := httptest.NewRecorder()
+
+	srv.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
+	}
+
+	body := recorder.Body.String()
+	if strings.TrimSpace(body) != testContent {
 		t.Errorf("expected body 'test content'; got '%s'", body)
 	}
 }
@@ -205,75 +203,64 @@ func (s *mockLinkedPhotosService) GetPost(slug string) (blog.Post, error) {
 }
 
 func TestBlogPost_LinkedPhotos(t *testing.T) {
-	srv := NewServer(&mockLinkedPhotosService{}, &mockPortfolioService{})
+	srv := NewServer(&mockLinkedPhotosService{}, &mockPortfolioService{}, testServerConfig(t))
 
 	req := httptest.NewRequest(http.MethodGet, "/blog/photo-post", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	body := w.Body.String()
+	body := recorder.Body.String()
 	if !strings.Contains(body, "View in Portfolio") && !strings.Contains(body, "Related Collection") {
 		t.Errorf("expected body to contain 'View in Portfolio' or 'Related Collection'; got body: %s", body)
 	}
 }
 
 func TestPortfolio_LinkedStory(t *testing.T) {
-	// Setup services
-	blogSvc := &mockLinkedPhotosService{} // Returns photo-post with /images/p1.jpg
-
-	// We need portfolio service to return /images/p1.jpg
-	// I'll create a specific mock for this test
+	blogSvc := &mockLinkedPhotosService{}
 	portSvc := &mockPortfolioServiceWithPhoto{}
 
-	srv := NewServer(blogSvc, portSvc)
+	srv := NewServer(blogSvc, portSvc, testServerConfig(t))
 
-	// Update: check /portfolio/TestCat instead of /portfolio
 	req := httptest.NewRequest(http.MethodGet, "/portfolio/TestCat", nil)
-	w := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	srv.ServeHTTP(w, req)
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
 
-	body := w.Body.String()
-	// We expect the photoToBlog map to be present in the JS
-	// The map should contain "/images/p1.jpg": "photo-post"
-	// Since it's JSON encoded, it might look like: "/images/p1.jpg":"photo-post"
-
+	body := recorder.Body.String()
 	if !strings.Contains(body, `"/images/p1":"photo-post"`) {
 		t.Errorf("expected body to contain photo mapping; got body: %s", body)
 	}
 }
 
 func TestPortfolioCategory(t *testing.T) {
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
-	// Test valid category
 	req := httptest.NewRequest(http.MethodGet, "/portfolio/Landscape", nil)
-	w := httptest.NewRecorder()
-	srv.ServeHTTP(w, req)
+	recorder := httptest.NewRecorder()
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status OK; got %v", w.Code)
+	if recorder.Code != http.StatusOK {
+		t.Errorf("expected status OK; got %v", recorder.Code)
 	}
-	if !strings.Contains(w.Body.String(), "Landscape") {
+	if !strings.Contains(recorder.Body.String(), "Landscape") {
 		t.Errorf("expected body to contain 'Landscape'")
 	}
 
-	// Test invalid category
 	req = httptest.NewRequest(http.MethodGet, "/portfolio/Invalid", nil)
-	w = httptest.NewRecorder()
-	srv.ServeHTTP(w, req)
+	recorder = httptest.NewRecorder()
+	srv.ServeHTTP(recorder, req)
 
-	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status NotFound; got %v", w.Code)
+	if recorder.Code != http.StatusNotFound {
+		t.Errorf("expected status NotFound; got %v", recorder.Code)
 	}
 }
 
@@ -281,13 +268,13 @@ type mockPortfolioServiceWithPhoto struct{}
 
 func (s *mockPortfolioServiceWithPhoto) GetCategories() ([]portfolio.Category, error) {
 	return []portfolio.Category{
-		{Name: "TestCat", Images: []string{"/images/p1"}, ImageExts: []string{".jpg"}},
+		{Name: "TestCat", Images: []portfolio.Image{{Path: "/images/p1", Ext: ".jpg"}}},
 	}, nil
 }
 
 func (s *mockPortfolioServiceWithPhoto) GetCategory(name string) (portfolio.Category, error) {
 	if name == "TestCat" {
-		return portfolio.Category{Name: "TestCat", Images: []string{"/images/p1"}, ImageExts: []string{".jpg"}}, nil
+		return portfolio.Category{Name: "TestCat", Images: []portfolio.Image{{Path: "/images/p1", Ext: ".jpg"}}}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
 }

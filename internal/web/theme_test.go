@@ -10,7 +10,7 @@ import (
 
 func TestThemeSwitcher(t *testing.T) {
 	// Setup server with mock services
-	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{})
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
 
 	// Request the home page
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

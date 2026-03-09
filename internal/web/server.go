@@ -2,60 +2,58 @@ package web
 
 import (
 	"net/http"
-	"os"
 	"personalwebsite/internal/blog"
 	"personalwebsite/internal/portfolio"
 	"personalwebsite/internal/web/components"
 	"strings"
 )
 
-func NewServer(blogService blog.Service, portfolioService portfolio.Service) http.Handler {
+type ServerConfig struct {
+	PortfolioAssetsPath string
+	AboutmeAssetsPath   string
+	CSSAssetsPath       string
+}
+
+func NewServer(blogService blog.Service, portfolioService portfolio.Service, serverConfig ServerConfig) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Basic exact matching for root to avoid catch-all behavior for unhandled paths
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/" {
+			http.NotFound(writer, request)
 			return
 		}
-		component := components.Home()
-		component.Render(r.Context(), w)
+		components.Home().Render(request.Context(), writer)
 	})
 
-	mux.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
-		component := components.About()
-		component.Render(r.Context(), w)
+	mux.HandleFunc("/about", func(writer http.ResponseWriter, request *http.Request) {
+		components.About().Render(request.Context(), writer)
 	})
 
-	mux.HandleFunc("/portfolio", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/portfolio", func(writer http.ResponseWriter, request *http.Request) {
 		categories, err := portfolioService.GetCategories()
 		if err != nil {
-			http.Error(w, "Failed to load portfolio categories", http.StatusInternalServerError)
+			http.Error(writer, "Failed to load portfolio categories", http.StatusInternalServerError)
 			return
 		}
 
-		// photoToBlog is unused in the main portfolio view now
 		photoToBlog := map[string]string{}
-
-		component := components.Portfolio(categories, photoToBlog)
-		component.Render(r.Context(), w)
+		components.Portfolio(categories, photoToBlog).Render(request.Context(), writer)
 	})
 
-	mux.HandleFunc("GET /portfolio/{category}", func(w http.ResponseWriter, r *http.Request) {
-		categoryName := r.PathValue("category")
+	mux.HandleFunc("GET /portfolio/{category}", func(writer http.ResponseWriter, request *http.Request) {
+		categoryName := request.PathValue("category")
 		category, err := portfolioService.GetCategory(categoryName)
 		if err != nil {
 			if err == portfolio.ErrCategoryNotFound {
-				http.NotFound(w, r)
+				http.NotFound(writer, request)
 				return
 			}
-			http.Error(w, "Failed to load category", http.StatusInternalServerError)
+			http.Error(writer, "Failed to load category", http.StatusInternalServerError)
 			return
 		}
 
-		// fetch all categories for "More Collections"
 		allCategories, err := portfolioService.GetCategories()
 		if err != nil {
-			http.Error(w, "Failed to load categories", http.StatusInternalServerError)
+			http.Error(writer, "Failed to load categories", http.StatusInternalServerError)
 			return
 		}
 
@@ -67,65 +65,43 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service) htt
 			photoToBlog = make(map[string]string)
 		}
 
-		component := components.PortfolioCategory(category, allCategories, photoToBlog)
-		component.Render(r.Context(), w)
+		components.PortfolioCategory(category, allCategories, photoToBlog).Render(request.Context(), writer)
 	})
 
-	mux.HandleFunc("GET /blog", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /blog", func(writer http.ResponseWriter, request *http.Request) {
 		posts, err := blogService.GetAllPosts()
 		if err != nil {
-			http.Error(w, "Failed to load posts", http.StatusInternalServerError)
+			http.Error(writer, "Failed to load posts", http.StatusInternalServerError)
 			return
 		}
-		component := components.BlogList(posts)
-		component.Render(r.Context(), w)
+		components.BlogList(posts).Render(request.Context(), writer)
 	})
 
-	mux.HandleFunc("GET /blog/{slug}", func(w http.ResponseWriter, r *http.Request) {
-		slug := r.PathValue("slug")
+	mux.HandleFunc("GET /blog/{slug}", func(writer http.ResponseWriter, request *http.Request) {
+		slug := request.PathValue("slug")
 		post, err := blogService.GetPost(slug)
 		if err != nil {
 			if err == blog.ErrPostNotFound {
-				http.NotFound(w, r)
+				http.NotFound(writer, request)
 				return
 			}
-			http.Error(w, "Failed to load post", http.StatusInternalServerError)
+			http.Error(writer, "Failed to load post", http.StatusInternalServerError)
 			return
 		}
-		component := components.BlogPost(post)
-		component.Render(r.Context(), w)
+		components.BlogPost(post).Render(request.Context(), writer)
 	})
 
-	portfolioPath := "./content/portfolio_optimized"
-	if _, err := os.Stat(portfolioPath); os.IsNotExist(err) {
-		// Fallback to original if optimized doesn't exist (local dev)
-		portfolioPath = "./content/portfolio"
-		if _, err := os.Stat(portfolioPath); os.IsNotExist(err) {
-			portfolioPath = "../../content/portfolio"
-		}
-	}
-
-	// Use ImageHandler instead of standard FileServer
-	imageHandler := NewImageHandler(portfolioPath)
+	imageHandler := NewImageHandler(serverConfig.PortfolioAssetsPath)
 	mux.Handle("/assets/portfolio/", http.StripPrefix("/assets/portfolio/", imageHandler))
 
-	aboutmePath := "content/aboutme_optimized"
-	if _, err := os.Stat(aboutmePath); os.IsNotExist(err) {
-		aboutmePath = "content/aboutme"
-	}
-	mux.Handle("/assets/aboutme/", http.StripPrefix("/assets/aboutme/", http.FileServer(http.Dir(aboutmePath))))
+	mux.Handle("/assets/aboutme/", http.StripPrefix("/assets/aboutme/", http.FileServer(http.Dir(serverConfig.AboutmeAssetsPath))))
 
-	assetsPath := "./internal/assets"
-	if _, err := os.Stat(assetsPath); os.IsNotExist(err) {
-		assetsPath = "../assets"
-	}
-
-	fileHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir(assetsPath)))
-	mux.Handle("/assets/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".css") {
-			w.Header().Set("Content-Type", "text/css")
+	fileHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir(serverConfig.CSSAssetsPath)))
+	mux.Handle("/assets/", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if strings.HasSuffix(request.URL.Path, ".css") {
+			writer.Header().Set("Content-Type", "text/css")
 		}
-		fileHandler.ServeHTTP(w, r)
+		fileHandler.ServeHTTP(writer, request)
 	}))
 
 	return mux

@@ -1,6 +1,8 @@
 package blog_test
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +10,21 @@ import (
 
 	"personalwebsite/internal/blog"
 )
+
+func writeMarkdownFile(t *testing.T, dir, slug, title, date, summary, body string) {
+	t.Helper()
+	content := fmt.Sprintf(`---
+title: "%s"
+date: "%s"
+summary: "%s"
+---
+
+%s`, title, date, summary, body)
+	filePath := filepath.Join(dir, slug+".md")
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to write test file %s: %v", filePath, err)
+	}
+}
 
 func TestFilesystemService_GetAllPosts(t *testing.T) {
 	// 1. Create temporary directory with a sample markdown file
@@ -112,5 +129,107 @@ linked_photos:
 
 	if post.LinkedPhotos[0] != "/images/photo1.jpg" {
 		t.Errorf("Expected first photo '/images/photo1.jpg', got '%s'", post.LinkedPhotos[0])
+	}
+}
+
+func TestFilesystemService_GetPost_ReturnsCorrectPost(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeMarkdownFile(t, tmpDir, "my-trip", "My Trip", "2024-03-15", "A great adventure.", "# My Trip\nIt was amazing.")
+
+	service := blog.NewFilesystemService(tmpDir)
+
+	post, err := service.GetPost("my-trip")
+	if err != nil {
+		t.Fatalf("GetPost returned error: %v", err)
+	}
+
+	if post.Title != "My Trip" {
+		t.Errorf("Expected Title 'My Trip', got '%s'", post.Title)
+	}
+
+	if post.Date.Format("2006-01-02") != "2024-03-15" {
+		t.Errorf("Expected Date '2024-03-15', got '%s'", post.Date.Format("2006-01-02"))
+	}
+
+	if post.Summary != "A great adventure." {
+		t.Errorf("Expected Summary 'A great adventure.', got '%s'", post.Summary)
+	}
+
+	if post.Slug != "my-trip" {
+		t.Errorf("Expected Slug 'my-trip', got '%s'", post.Slug)
+	}
+
+	if !strings.Contains(post.Content, "My Trip") {
+		t.Errorf("Expected Content to contain 'My Trip', got: %s", post.Content)
+	}
+}
+
+func TestFilesystemService_GetPost_ReturnsErrPostNotFoundForNonexistentSlug(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeMarkdownFile(t, tmpDir, "existing-post", "Existing", "2024-01-01", "Exists.", "# Exists")
+
+	service := blog.NewFilesystemService(tmpDir)
+
+	_, err := service.GetPost("nonexistent")
+	if !errors.Is(err, blog.ErrPostNotFound) {
+		t.Errorf("Expected ErrPostNotFound, got: %v", err)
+	}
+}
+
+func TestFilesystemService_GetPost_ReturnsCorrectPostAmongMultiple(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeMarkdownFile(t, tmpDir, "alpha-post", "Alpha", "2024-01-01", "First post.", "# Alpha")
+	writeMarkdownFile(t, tmpDir, "beta-post", "Beta", "2024-02-02", "Second post.", "# Beta")
+	writeMarkdownFile(t, tmpDir, "gamma-post", "Gamma", "2024-03-03", "Third post.", "# Gamma")
+
+	service := blog.NewFilesystemService(tmpDir)
+
+	post, err := service.GetPost("beta-post")
+	if err != nil {
+		t.Fatalf("GetPost returned error: %v", err)
+	}
+
+	if post.Title != "Beta" {
+		t.Errorf("Expected Title 'Beta', got '%s'", post.Title)
+	}
+
+	if post.Slug != "beta-post" {
+		t.Errorf("Expected Slug 'beta-post', got '%s'", post.Slug)
+	}
+
+	if post.Summary != "Second post." {
+		t.Errorf("Expected Summary 'Second post.', got '%s'", post.Summary)
+	}
+}
+
+func TestFilesystemService_GetPost_SucceedsEvenWhenOtherFilesAreInvalid(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeMarkdownFile(t, tmpDir, "good-post", "Good Post", "2024-05-01", "A valid post.", "# Good content")
+
+	invalidContent := []byte(`---
+title: "Bad Post"
+date: "not-a-real-date"
+summary: "This will fail to parse."
+---
+
+# Bad`)
+	invalidPath := filepath.Join(tmpDir, "bad-post.md")
+	if err := os.WriteFile(invalidPath, invalidContent, 0644); err != nil {
+		t.Fatalf("Failed to write invalid test file: %v", err)
+	}
+
+	service := blog.NewFilesystemService(tmpDir)
+
+	post, err := service.GetPost("good-post")
+	if err != nil {
+		t.Fatalf("GetPost should succeed for valid post even when other files are invalid, got error: %v", err)
+	}
+
+	if post.Title != "Good Post" {
+		t.Errorf("Expected Title 'Good Post', got '%s'", post.Title)
+	}
+
+	if post.Slug != "good-post" {
+		t.Errorf("Expected Slug 'good-post', got '%s'", post.Slug)
 	}
 }

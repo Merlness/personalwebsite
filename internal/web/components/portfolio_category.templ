@@ -13,7 +13,7 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
             lightboxIndex: 0,
             
             get lightboxImage() {
-                return this.images[this.lightboxIndex];
+                return this.images[this.lightboxIndex] || {};
             },
             
             openLightbox(index) {
@@ -52,7 +52,7 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                 <div class="flex flex-wrap gap-2">
                      for i, img := range category.Images {
                         <div @click={ fmt.Sprintf("openLightbox(%d)", i) } class="h-64 md:h-80 flex-grow relative cursor-pointer group overflow-hidden border" style="border-color: var(--color-border);">
-                            <img src={ img + "_w600" + templ.EscapeString(category.ImageExts[i]) } class="h-full min-w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                            <img src={ img.Path + "_w600" + img.Ext } class="h-full min-w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" style="background-color: rgba(0,0,0,0.5);">
                                 <span class="uppercase tracking-widest text-xs border px-4 py-2 text-white" style="border-color: white;">View</span>
                             </div>
@@ -69,8 +69,8 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                         for _, cat := range allCategories {
                             if cat.Name != category.Name {
                                 <a href={ templ.SafeURL("/portfolio/" + cat.Name) } class="group cursor-pointer relative aspect-[3/2] overflow-hidden border block" style="border-color: var(--color-border); background-color: #1a1a1a;">
-                                    if cat.CoverImage != "" {
-                                        <img src={ cat.CoverImage + "_w600" + templ.EscapeString(cat.CoverImageExt) } alt={ cat.Name } class="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-all duration-500 group-hover:scale-105" loading="lazy" />
+                                    if cat.CoverImage.Path != "" {
+                                        <img src={ cat.CoverImage.Path + "_w600" + cat.CoverImage.Ext } alt={ cat.Name } class="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-all duration-500 group-hover:scale-105" loading="lazy" />
                                     } else {
                                          <div class="w-full h-full flex items-center justify-center" style="background-color: rgba(128,128,128,0.1); color: #999;">
                                             <span>No Preview</span>
@@ -123,8 +123,8 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
                 </button>
 
                 <!-- Read Story Button -->
-                <template x-if="lightboxImage && photoToBlog[lightboxImage]">
-                    <a :href="'/blog/' + photoToBlog[lightboxImage]" 
+                <template x-if="lightboxImage.Path && photoToBlog[lightboxImage.Path]">
+                    <a :href="'/blog/' + photoToBlog[lightboxImage.Path]" 
                        class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 inline-block border border-silver-400 bg-black/50 backdrop-blur text-silver-400 px-6 py-3 uppercase tracking-widest text-sm hover:bg-silver-400 hover:text-black transition-colors">
                         Read Story
                     </a>
@@ -132,7 +132,7 @@ templ PortfolioCategory(category portfolio.Category, allCategories []portfolio.C
 
                 <!-- Main Image -->
                 <div class="w-full h-full flex items-center justify-center p-4 md:p-12">
-                    <img :src="lightboxImage + '_w1600' + '.jpg'" class="max-w-full max-h-full object-contain shadow-2xl shadow-black" />
+                    <img :src="lightboxImage.Path + '_w1600' + lightboxImage.Ext" class="max-w-full max-h-full object-contain shadow-2xl shadow-black" />
                 </div>
             </div>
 

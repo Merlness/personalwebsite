@@ -5,20 +5,23 @@ import (
 	"net/http"
 	"os"
 	"personalwebsite/internal/blog"
+	"personalwebsite/internal/config"
 	"personalwebsite/internal/portfolio"
 	"personalwebsite/internal/web"
 )
 
 func main() {
 	blogService := blog.NewFilesystemService("content/blog")
+	portfolioService := portfolio.NewFilesystemService(config.ResolvePortfolioRoot(), "/assets/portfolio")
 
-	portfolioRoot := "content/portfolio_optimized"
-	if _, err := os.Stat(portfolioRoot); os.IsNotExist(err) {
-		portfolioRoot = "content/portfolio"
+	serverConfig := web.ServerConfig{
+		PortfolioAssetsPath: config.ResolvePortfolioRoot(),
+		AboutmeAssetsPath:   config.ResolveAboutmeRoot(),
+		CSSAssetsPath:       "internal/assets",
 	}
 
-	portfolioService := portfolio.NewFilesystemService(portfolioRoot, "/assets/portfolio")
-	server := web.NewServer(blogService, portfolioService)
+	server := web.NewServer(blogService, portfolioService, serverConfig)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

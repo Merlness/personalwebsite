@@ -24,12 +24,11 @@ func NewResizer(contentRoot, cacheRoot string) *Resizer {
 func (r *Resizer) Resize(relPath string, width int) (string, error) {
 	fullPath := filepath.Join(r.contentRoot, relPath)
 
-	// Check if source exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+	srcInfo, err := os.Stat(fullPath)
+	if err != nil {
 		return "", fmt.Errorf("source file not found: %w", err)
 	}
 
-	// Construct cache path
 	dir := filepath.Dir(relPath)
 	filename := filepath.Base(relPath)
 	ext := filepath.Ext(filename)
@@ -39,8 +38,8 @@ func (r *Resizer) Resize(relPath string, width int) (string, error) {
 	cachedDir := filepath.Join(r.cacheRoot, dir)
 	cachedPath := filepath.Join(cachedDir, cachedFilename)
 
-	// Check if cached exists
-	if _, err := os.Stat(cachedPath); err == nil {
+	cachedInfo, cacheErr := os.Stat(cachedPath)
+	if cacheErr == nil && cachedInfo.ModTime().After(srcInfo.ModTime()) {
 		return cachedPath, nil
 	}
 

@@ -50,7 +50,6 @@ COPY --from=builder /app/image_cache ./image_cache
 # Environment variables
 ENV PORT=8080
 ENV CACHE_DIR=/app/image_cache
-ENV GIN_MODE=release
 
 # Expose port
 EXPOSE 8080
