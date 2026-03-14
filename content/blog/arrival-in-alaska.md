@@ -3,7 +3,7 @@ title: "Arrival in Alaska: First Glimpses of the Last Frontier"
 date: "2018-06-19"
 summary: "Landing in Anchorage, crossing the bay, and setting up camp on the point — the first days of a summer spent commercial fishing in Bristol Bay."
 linked_photos:
-  - "/assets/portfolio/Alaska/DSC05907.jpg"
+  - "/assets/portfolio/Alaska/last.jpg"
   - "/assets/portfolio/Alaska/DSC05913.jpg"
   - "/assets/portfolio/Alaska/DSC05927.jpg"
   - "/assets/portfolio/Alaska/DSC05942.jpg"
@@ -11,7 +11,7 @@ linked_photos:
   - "/assets/portfolio/Alaska/DSC06048.jpg"
 ---
 
-![Aerial view of Alaska](/assets/portfolio/Alaska/DSC05907.jpg)
+![Aerial view of Alaska](/assets/portfolio/Alaska/last.jpg)
 
 I've never been good at writing. In fact, I think I've only written for school. This might be my first journal entry ever — or at least, let's just say it is. My memory isn't the best.
 
