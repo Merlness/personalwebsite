@@ -132,6 +132,36 @@ linked_photos:
 	}
 }
 
+func TestFilesystemService_GetAllPosts_ReturnsMostRecentFirst(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeMarkdownFile(t, tmpDir, "oldest", "Oldest Post", "2018-06-19", "The oldest.", "# Old")
+	writeMarkdownFile(t, tmpDir, "middle", "Middle Post", "2018-06-23", "The middle.", "# Mid")
+	writeMarkdownFile(t, tmpDir, "newest", "Newest Post", "2018-07-04", "The newest.", "# New")
+
+	service := blog.NewFilesystemService(tmpDir)
+
+	posts, err := service.GetAllPosts()
+	if err != nil {
+		t.Fatalf("GetAllPosts returned error: %v", err)
+	}
+
+	if len(posts) != 3 {
+		t.Fatalf("Expected 3 posts, got %d", len(posts))
+	}
+
+	if posts[0].Slug != "newest" {
+		t.Errorf("Expected first post to be 'newest', got '%s'", posts[0].Slug)
+	}
+
+	if posts[1].Slug != "middle" {
+		t.Errorf("Expected second post to be 'middle', got '%s'", posts[1].Slug)
+	}
+
+	if posts[2].Slug != "oldest" {
+		t.Errorf("Expected third post to be 'oldest', got '%s'", posts[2].Slug)
+	}
+}
+
 func TestFilesystemService_GetPost_ReturnsCorrectPost(t *testing.T) {
 	tmpDir := t.TempDir()
 	writeMarkdownFile(t, tmpDir, "my-trip", "My Trip", "2024-03-15", "A great adventure.", "# My Trip\nIt was amazing.")

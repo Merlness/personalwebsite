@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -80,6 +81,10 @@ func (svc *filesystemService) GetAllPosts() ([]Post, error) {
 
 		posts = append(posts, post)
 	}
+
+	sort.Slice(posts, func(idx, jdx int) bool {
+		return posts[idx].Date.After(posts[jdx].Date)
+	})
 
 	return posts, nil
 }
