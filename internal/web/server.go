@@ -88,7 +88,14 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service, ser
 			http.Error(writer, "Failed to load post", http.StatusInternalServerError)
 			return
 		}
-		components.BlogPost(post).Render(request.Context(), writer)
+
+		var prevPost, nextPost *blog.Post
+		posts, postsErr := blogService.GetAllPosts()
+		if postsErr == nil {
+			prevPost, nextPost = blog.FindNeighbors(posts, slug)
+		}
+
+		components.BlogPost(post, prevPost, nextPost).Render(request.Context(), writer)
 	})
 
 	imageHandler := NewImageHandler(serverConfig.PortfolioAssetsPath)

@@ -185,7 +185,7 @@ func (s *mockLinkedPhotosService) GetAllPosts() ([]blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1.jpg"},
+			LinkedPhotos: []string{"/assets/portfolio/TestCat/p1.jpg"},
 		},
 	}, nil
 }
@@ -196,7 +196,7 @@ func (s *mockLinkedPhotosService) GetPost(slug string) (blog.Post, error) {
 			Title:        "Photo Post",
 			Slug:         "photo-post",
 			Content:      "Content",
-			LinkedPhotos: []string{"/images/p1.jpg"},
+			LinkedPhotos: []string{"/assets/portfolio/TestCat/p1.jpg"},
 		}, nil
 	}
 	return blog.Post{}, blog.ErrPostNotFound
@@ -215,8 +215,11 @@ func TestBlogPost_LinkedPhotos(t *testing.T) {
 	}
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, "View in Portfolio") && !strings.Contains(body, "Related Collection") {
-		t.Errorf("expected body to contain 'View in Portfolio' or 'Related Collection'; got body: %s", body)
+	if !strings.Contains(body, "View Related Collection") {
+		t.Errorf("expected body to contain 'View Related Collection'; got body: %s", body)
+	}
+	if !strings.Contains(body, "/portfolio/TestCat") {
+		t.Errorf("expected body to contain link to '/portfolio/TestCat'; got body: %s", body)
 	}
 }
 
@@ -236,7 +239,7 @@ func TestPortfolio_LinkedStory(t *testing.T) {
 	}
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, `"/images/p1":"photo-post"`) {
+	if !strings.Contains(body, `"/assets/portfolio/TestCat/p1":"photo-post"`) {
 		t.Errorf("expected body to contain photo mapping; got body: %s", body)
 	}
 }
@@ -268,13 +271,13 @@ type mockPortfolioServiceWithPhoto struct{}
 
 func (s *mockPortfolioServiceWithPhoto) GetCategories() ([]portfolio.Category, error) {
 	return []portfolio.Category{
-		{Name: "TestCat", Images: []portfolio.Image{{Path: "/images/p1", Ext: ".jpg"}}},
+		{Name: "TestCat", Images: []portfolio.Image{{Path: "/assets/portfolio/TestCat/p1", Ext: ".jpg"}}},
 	}, nil
 }
 
 func (s *mockPortfolioServiceWithPhoto) GetCategory(name string) (portfolio.Category, error) {
 	if name == "TestCat" {
-		return portfolio.Category{Name: "TestCat", Images: []portfolio.Image{{Path: "/images/p1", Ext: ".jpg"}}}, nil
+		return portfolio.Category{Name: "TestCat", Images: []portfolio.Image{{Path: "/assets/portfolio/TestCat/p1", Ext: ".jpg"}}}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
 }

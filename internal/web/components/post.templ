@@ -2,9 +2,10 @@ package components
 
 import (
     "personalwebsite/internal/blog"
+    "fmt"
 )
 
-templ BlogPost(post blog.Post) {
+templ BlogPost(post blog.Post, prevPost *blog.Post, nextPost *blog.Post) {
 	@Layout(post.Title + " | Merl Martin") {
 		<article class="max-w-3xl mx-auto space-y-8">
 			<div class="space-y-4 text-center">
@@ -23,18 +24,46 @@ templ BlogPost(post blog.Post) {
 				</div>
 			</div>
 
-			if len(post.LinkedPhotos) > 0 {
+			if post.LinkedCategory() != "" {
 				<div class="text-center pt-8">
-					<a href="/portfolio" class="inline-block border px-6 py-3 uppercase tracking-widest text-sm hover:opacity-70 transition-opacity" style="border-color: var(--color-border); color: var(--color-text-primary);">
+					<a href={ templ.SafeURL(fmt.Sprintf("/portfolio/%s", post.LinkedCategory())) } class="inline-block border px-6 py-3 uppercase tracking-widest text-sm hover:opacity-70 transition-opacity" style="border-color: var(--color-border); color: var(--color-text-primary);">
 						View Related Collection
 					</a>
 				</div>
 			}
 
-			<div class="pt-12 text-center border-t" style="border-color: var(--color-border);">
-				<a href="/blog" class="text-sm uppercase tracking-widest hover:opacity-70 transition-opacity" style="color: var(--color-text-secondary);">
-					&larr; Back to Journal
-				</a>
+			<div class="pt-12 border-t" style="border-color: var(--color-border);">
+				<div class="flex justify-between items-start">
+					<div class="flex-1">
+						if nextPost != nil {
+							<a href={ templ.SafeURL(fmt.Sprintf("/blog/%s", nextPost.Slug)) } class="group inline-block">
+								<span class="text-xs font-mono uppercase tracking-widest block mb-2" style="color: var(--color-text-secondary);">
+									&larr; Older
+								</span>
+								<span class="text-sm font-serif group-hover:opacity-70 transition-opacity" style="color: var(--color-text-primary);">
+									{ nextPost.Title }
+								</span>
+							</a>
+						}
+					</div>
+					<div class="flex-shrink-0 px-4 pt-1">
+						<a href="/blog" class="text-xs uppercase tracking-widest hover:opacity-70 transition-opacity" style="color: var(--color-text-secondary);">
+							All Posts
+						</a>
+					</div>
+					<div class="flex-1 text-right">
+						if prevPost != nil {
+							<a href={ templ.SafeURL(fmt.Sprintf("/blog/%s", prevPost.Slug)) } class="group inline-block">
+								<span class="text-xs font-mono uppercase tracking-widest block mb-2" style="color: var(--color-text-secondary);">
+									Newer &rarr;
+								</span>
+								<span class="text-sm font-serif group-hover:opacity-70 transition-opacity" style="color: var(--color-text-primary);">
+									{ prevPost.Title }
+								</span>
+							</a>
+						}
+					</div>
+				</div>
 			</div>
 		</article>
 	}

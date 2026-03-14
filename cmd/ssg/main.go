@@ -87,8 +87,9 @@ func generateBlog(out string, bService blog.Service) error {
 	}
 
 	for _, post := range posts {
+		prevPost, nextPost := blog.FindNeighbors(posts, post.Slug)
 		pagePath := filepath.Join(out, "blog", post.Slug, "index.html")
-		err = renderPage(pagePath, components.BlogPost(post).Render)
+		err = renderPage(pagePath, components.BlogPost(post, prevPost, nextPost).Render)
 		if err != nil {
 			return err
 		}

@@ -54,6 +54,34 @@ func (s *memoryService) GetPost(slug string) (Post, error) {
 	return Post{}, ErrPostNotFound
 }
 
+func (post Post) LinkedCategory() string {
+	if len(post.LinkedPhotos) == 0 {
+		return ""
+	}
+	parts := strings.Split(post.LinkedPhotos[0], "/")
+	if len(parts) < 4 {
+		return ""
+	}
+	return parts[3]
+}
+
+func FindNeighbors(posts []Post, slug string) (*Post, *Post) {
+	for idx, post := range posts {
+		if post.Slug != slug {
+			continue
+		}
+		var prevPost, nextPost *Post
+		if idx > 0 {
+			prevPost = &posts[idx-1]
+		}
+		if idx < len(posts)-1 {
+			nextPost = &posts[idx+1]
+		}
+		return prevPost, nextPost
+	}
+	return nil, nil
+}
+
 func BuildPhotoToBlogMap(posts []Post) map[string]string {
 	photoToBlog := make(map[string]string)
 	for _, post := range posts {
