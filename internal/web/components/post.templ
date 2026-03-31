@@ -18,11 +18,11 @@ templ BlogPost(post blog.Post, prevPost *blog.Post, nextPost *blog.Post) {
 				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
 			</div>
 
-			<div class="prose prose-invert prose-silver mx-auto">
-				<div class="leading-relaxed" style="color: var(--color-text-secondary);">
+		<div class="prose prose-invert prose-silver mx-auto">
+				<div data-pretext-hover class="leading-relaxed space-y-6" style="color: var(--color-text-secondary);">
 					@templ.Raw(post.Content)
 				</div>
-			</div>
+		</div>
 
 			if post.LinkedCategory() != "" {
 				<div class="text-center pt-8">

@@ -35,12 +35,12 @@ templ BlogCard(post blog.Post) {
 			<div class="text-xs font-mono uppercase tracking-widest" style="color: var(--color-text-secondary);">
 				{ post.Date.Format("January 02, 2006") }
 			</div>
-			<h2 class="text-2xl font-serif hover:opacity-70 transition-opacity" style="color: var(--color-text-primary);">
+			<h2 data-pretext-shrinkwrap class="text-2xl font-serif hover:opacity-70 transition-opacity" style="color: var(--color-text-primary);">
 				<a href={ templ.SafeURL(fmt.Sprintf("/blog/%s", post.Slug)) }>
 					{ post.Title }
 				</a>
 			</h2>
-			<p class="leading-relaxed" style="color: var(--color-text-secondary);">
+			<p data-pretext-shrinkwrap class="leading-relaxed" style="color: var(--color-text-secondary);">
 				{ post.Summary }
 			</p>
 			<div class="pt-2">

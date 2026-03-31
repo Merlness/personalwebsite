@@ -59,7 +59,7 @@ func (post Post) LinkedCategory() string {
 		return ""
 	}
 	parts := strings.Split(post.LinkedPhotos[0], "/")
-	if len(parts) < 4 {
+	if len(parts) < 5 {
 		return ""
 	}
 	return parts[3]

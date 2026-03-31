@@ -15,6 +15,10 @@ templ Layout(title string) {
 			<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet"/>
 			<link href={ fmt.Sprintf("/assets/css/output.css?v=%d", time.Now().Unix()) } rel="stylesheet"/>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script type="module" src="/assets/js/pretext-init.js"></script>
+			<script defer src="/assets/js/pretext-blog.js"></script>
+			<script defer src="/assets/js/pretext-shrinkwrap.js"></script>
+			<script defer src="/assets/js/pretext-hover.js"></script>
 		</head>
 		<body class="h-full flex flex-col transition-colors duration-300">
 			<header class="p-6">

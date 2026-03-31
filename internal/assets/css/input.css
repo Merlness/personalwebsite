@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+.pretext-line {
+  transition: color 120ms ease;
+  cursor: text;
+}
+
+[data-pretext-hover] h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-heading);
+}
+
+.pretext-line:hover {
+  color: var(--color-hover-accent) !important;
+}
+
 @layer base {
   :root {
     --color-bg-primary: #FFFFFF;
@@ -10,6 +30,8 @@
     --color-border: #e5e5e5;
     --color-accent: #2c2c2c;
     --color-bg-nav: #f8f8f8;
+    --color-hover-accent: #955f3b;
+    --color-heading: #1a1a1a;
   }
 
   [data-theme="rhcp"] {
@@ -19,6 +41,7 @@
     --color-border: #FFC400;
     --color-accent: #00E5FF;
     --color-heading: #D500F9;
+    --color-hover-accent: #00E5FF;
     --color-marigold: #FF9800;
     --color-marigold-dark: #FF6F00;
     --color-purple-deep: #4A148C;

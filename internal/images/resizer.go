@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/disintegration/imaging"
@@ -57,8 +58,19 @@ func (r *Resizer) Resize(relPath string, width int) (string, error) {
 	// Resize to width, preserving aspect ratio (height = 0)
 	dstImage := imaging.Resize(srcImage, width, 0, imaging.Lanczos)
 
-	if err := imaging.Save(dstImage, cachedPath); err != nil {
+	// Atomic write: save to temp file first, then rename.
+	// This prevents race conditions where concurrent requests could
+	// corrupt the cache file by writing to it simultaneously.
+	cachedExt := filepath.Ext(cachedPath)
+	cachedBase := strings.TrimSuffix(cachedPath, cachedExt)
+	tmpPath := cachedBase + ".tmp." + strconv.Itoa(os.Getpid()) + cachedExt
+	if err := imaging.Save(dstImage, tmpPath); err != nil {
+		os.Remove(tmpPath)
 		return "", fmt.Errorf("failed to save image: %w", err)
+	}
+	if err := os.Rename(tmpPath, cachedPath); err != nil {
+		os.Remove(tmpPath)
+		return "", fmt.Errorf("failed to move cache file: %w", err)
 	}
 
 	return cachedPath, nil

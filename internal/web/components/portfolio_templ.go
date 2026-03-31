@@ -102,14 +102,14 @@ func Portfolio(categories []portfolio.Category, photoToBlog map[string]string) t
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10\"><h3 class=\"text-2xl font-serif mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300 text-white\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10\"><h3 data-pretext-shrinkwrap class=\"text-2xl font-serif mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300 text-white\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(cat.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio.templ`, Line: 33, Col: 161}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/portfolio.templ`, Line: 33, Col: 185}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {

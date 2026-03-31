@@ -72,7 +72,7 @@ func BlogPost(post blog.Post, prevPost *blog.Post, nextPost *blog.Post) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div></div><div class=\"prose prose-invert prose-silver mx-auto\"><div class=\"leading-relaxed\" style=\"color: var(--color-text-secondary);\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div></div><div class=\"prose prose-invert prose-silver mx-auto\"><div data-pretext-hover class=\"leading-relaxed space-y-6\" style=\"color: var(--color-text-secondary);\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
