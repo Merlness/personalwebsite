@@ -11,71 +11,83 @@ linked_photos:
 
 ![Sunset over the water](/assets/portfolio/Alaska/DSC06226.jpg)
 
-It was the Fourth of July and the sun came out unexpectedly. I hadn't been able to write for a bit and the last time I tried I was interrupted. I hoped most of the nuances were still fresh, but for at least right then I wanted to write and remember three memories that may have happened in a 24-hour span. A truly beautiful day.
+It was the Fourth of July and the sun came out unexpectedly. I hadn't been able to write for a bit and the last time I tried I was interrupted. I wanted to make sure the nuances were still fresh, so I sat down to write about memories from a few days ago. A truly beautiful time.
 
 ## The Wild West
 
-To set the scene I have to mention the days before. It had been our biggest day of the season so far. We were 9 strong, and we mainly fished on an estuary. It was large. From the town across the bay to the point where I was it took about 30 minutes in a skiff to cross over.
+To set the scene I have to mention the days before. It had been our biggest day of the season so far. We were 9 strong, and we mainly fished on an estuary. It was large. From the town across the bay (Dillingham) to our point on the Nushagak took about 45 minutes in a skiff to cross over.
 
-Sometimes, due to several factors, there was a river nearby that was much smaller and was open for business on rare occasions. What made this special was that there could be many fish or no fish. It was like a gamble to go there because from where we were it was about an hour ride, so it wasn't convenient.
+Sometimes, due to several factors, there was a river nearby, the Wood River, that only opened on rare occasions. What made this special was that there could be many fish or no fish. It was like a gamble to go there because from where we were it was an hour-plus ride, so it wasn't exactly convenient.
 
 ![River approach](/assets/portfolio/Alaska/DSC06228.jpg)
 
-Also on the Nushagak there were set physical locations where each skiff was registered in a very orderly fashion. If you went in the wrong place there was a big fine. In the Wood River it was said to be the Wild West, anyone could take any spot. I had heard rumors of people even using weapons to claim specific locations.
+On the Nushagak there were set physical locations where each skiff was registered in a very orderly fashion. If you went in the wrong place there was a big fine. The Wood River was said to be the Wild West. Anyone could take any spot. I had heard rumors of people even using weapons to claim specific locations.
 
-This was important because on that day the Wood River was opened for the first time that season. Since it was the Wild West it was in our best interest to be there all three skiffs strong. Although we had gone a few weeks earlier and set signs to "claim our sites," anyone could have easily removed them and been justified. So we all had to go to be united and strong in order to claim our locations.
+This was important because on that day the Wood River opened for the first time that season. Since it was the Wild West it was in our best interest to be there all three skiffs strong. Although we had gone a few weeks earlier and set signs to "claim our sites," anyone could have easily removed them and been justified. So we all had to go together, united and strong, to hold our ground.
+We couldn't stay at our place on the point because it was so far away. We had to stay in Dillingham across the bay, which meant gathering our electronics, sleeping bags, clothes, everything important, on our backs, through the mud.
 
-We couldn't stay at our place on the point because it was so far away. We had to stay in Dillingham across the bay, so we had to gather our things and move them through the mud into the boats. Imagine gathering your electronics and sleeping supplies and clothes and everything that is important on your back through mud that when you step on it usually sinks to your ankles and sometimes to your knees. It's pretty tough.
-
-We did this because we might have needed to sleep in a locker for a few days if the fish were on the Wood.
+I should explain this mud.
 
 ![Mudflats at low tide](/assets/portfolio/Alaska/DSC06278.jpg)
 
-As we were traveling to the river it began to rain. The day was long and hard and cold. We barely had a few fish, but we claimed our sites and were able to go back to Dillingham and shower and rest for the next few hours before our next opener on the Nushagak.
+The tide shift up near the pole is drastic. About 19 feet between high and low tide. Because the beach is so shallow, that 19-foot drop means the shoreline physically moves out three to four hundred feet, roughly four football fields of water just disappearing and reappearing every six hours. Every time you step in the mud it engulfs your foot halfway up to your knee. It makes a loud plop when you pull it out and sometimes kicks up right into your face. Walking is exhausting.
+
+Getting your boat stranded is embarrassing but it's also costly. You lose fishing time, you lose money, and the fish already in your boat might rot before the water comes back. Just a complete waste.
+
+One day we had a minor miscalculation. One of our three boats was about to be stranded. I was in a different boat so we pulled up as close as we could and I jumped out and ran as fast as you can possibly run through mud, which is not fast at all. We had to push this heavy boat, full of fish, back toward the receding water. It felt like one of those football sled drills where you're just throwing your whole body into something that doesn't want to move. The sun was baking the mud, making it drier and stickier. We were already exhausted. We must have pushed that boat at least 70 yards to get it back to the water. Brutal effort. But we saved the fish.
 
 ## The Big Day
 
-The next day was warm on the Nushagak. I woke up at 6 to set with some of the crew, we came back for coffee and then went to pick the fish with everyone. It had been the largest day of the year so far. There was a longer day where we had to fish through the night, but this was a huge day and it was very lucky that we had 9 people. It was a wonderful day to fish, nice and warm and not too sunny. I came back at about 11 PM and during that time in our lone boat we picked a little less than 20,000 pounds of fish. I think for our 3 boats we got close to 40,000 pounds.
+The next day was warm on the Nushagak. I woke up at 6 am to set with some of the crew, came back for coffee, then went to pick fish with everyone. It had been the largest day of the year so far. Nice and warm and not too sunny, a wonderful day to fish. I came back at about 11 PM and during that time in our lone boat we picked a little less than 20,000 pounds of fish. For our 3 boats combined we got close to 40,000 pounds.
 
 ![Full nets](/assets/portfolio/Alaska/DSC06289.jpg)
 
-There's nothing much to say about that except we were constantly doing something. Picking fish, moving the net, delivering, rinse and repeat all day.
+There's nothing much to say about that except we were constantly doing something. Picking fish, moving the net, delivering to the tender, rinse and repeat all day.
 
-Throughout the night I kept waking up because my forearms kept going numb. They had been worked so hard. That had been happening nightly since the first big day actually. It was such a weird feeling.
+## Fueling the Machine
+
+You need serious fuel for that kind of labor. Our captain bought everything in bulk in Seattle before the season started, mostly non-perishable, frozen stuff we'd pick up in Dillingham as needed. Hearty food loaded with carbs and protein.
+Sometimes we'd catch a salmon and cook it right there on the water. The best fish tacos I've ever had in my life were out on that river.
+
+But my favorite constant meal was pancakes with Spam. Stack of pancakes, load them with peanut butter, butter, and syrup, then throw a thick piece of greasy Spam right on top. It sounds insane. I loved it. It was exactly the protein and calories my body was screaming for.
 
 ## Fortune's Wheel
 
-Each day had its nuances and memories. Those were interesting but they were in the hard category, which made the next moments special.
+Each day had its nuances and memories. Some were interesting but fell in the hard category, which made the next moments special.
 
-Usually when Lady Fortune spins the wheel we always expect it to land on good fortune and are disappointed when it lands on bad. The good fortune seems deceiving because we expect it to be the norm, but in reality it's the bad fortune that's good for us because it reminds us of the good and is more honest in a way. I didn't know how long I would have that mentality but so far it seemed nice to take the good and the bad with a stoic attitude because they could both be flipped depending on the situation.
+Usually when Lady Fortune spins the wheel we always expect it to land on good and are disappointed when it doesn't. The good fortune seems like the norm, but actually it's the bad that's more honest. It reminds you of the good and keeps you from taking it for granted. I didn't know how long I'd hold onto that mentality but so far it seemed like a nice way to move through things. Take the good and the bad with a stoic attitude because they can both be flipped depending on the situation.
 
 ## Steam Rising from the Mud
 
 The beginning and end of that day were spectacular. Things you keep with you for a lifetime.
 
-The morning after the long day our boats were dry. This meant we had anchored them too close in and the tide went away so we were stuck in the mud or sand and couldn't reach the water.
+The morning after the long day our boats were dry, anchored too close in, tide went away, stuck in the mud. But it was another rare sunny day. The sun heated the mud and fog began to rise from it. Steam from the ground had a surreal effect. We were out toward the sand which is past the mud at low tide, and there was wind. I could just sit on the sand and watch this steam flow toward me and right through me.
 
-I was fortunate because it was another sunny rare day. So much so that the sun heated the mud and fog began to rise. It was a beautiful and unusual sight. Steam from the mud had a surreal effect to it. I had seen it before but on that day we were out towards the sand which is past the mud on the low tide, and there was wind. This meant I could sit on the sand and watch this steam flow through me.
+Imagine seeing dark sand with ghosts flying over it from a far direction, then that cool mist flowing through you with a breeze your senses had been craving. That happened for about 10 minutes until the water finally reached our boats and we could begin again.
 
-It was an incredible experience. Imagine seeing the dark sand with ghosts flying over it from a far direction and then flowing through you with a cool breeze that your senses long for. That happened constantly for about 10 minutes until water reached our boats and we were able to begin fishing.
+There was no cell reception out there. Electricity was limited to car batteries for lights or the occasional small DVD player. Physically it was the most intense thing I'd ever done. Mentally I don't think I've ever found so much peace in my life. I'd put my headphones on, listen to music, and just watch the landscape. Pure.
 
 ## Sunset on the River
 
-That day was above average for fishing, we did well. It was after that stands out.
+That day was above average for fishing, we did well. But it's what happened after that stands out.
 
-It was the last night we would fish as 9 for 2 had to return. Since it was sunny the sunset was marvelous, many shades of blue for the far away mountains and orange from the sunlight. As the sun was setting we put the three boats together, played some chill music, and drank a beer.
+It was the last night we would fish as 9, two had to head back. Our day ended right around midnight, which also happened to be sunset up there.
 
-It reminded me of the scene in *Shawshank Redemption* where Andy gets a beer for his pals, and for those moments all is right with the world. There my whole worry was fish, nothing else. And after a long several days, for us to unite and share in the camaraderie with a cold brew on the river with some slow jams and the sky showing off her colors for us, that was the fulfillment most people search for. Those are the moments one carries till the grave.
+The sky was marvelous. Many shades of blue over the far-away mountains and orange from the sunlight. We tied the three boats together, played some chill music, and cracked a beer. All of us sitting there in our heavy gear, covered in mud and sweat and a little blood, just laughing.
+
+It reminded me of the scene in *Shawshank Redemption* where Andy gets a beer for his pals, and for those moments all is right with the world. Out there my whole worry was fish, nothing else. And after a long several days, for us to unite and share in the camaraderie with a cold brew on the river with some slow jams while the sky showed off her colors for us, that was the fulfillment most people spend their whole lives searching for. Those are the moments one carries till the grave.
 
 ## Almost Overboard
 
-Now that I was able to sit and contemplate on it I couldn't beat what I wrote above. That was too beautiful of a moment. But this one was pretty dope.
+I couldn't beat what I wrote above. That was too beautiful of a moment. But this one was pretty dope.
 
-The next morning I was still recovering from everything really. Several times on the boat you need to reach over on the water to grab the net with a hook, and usually you can grab it and pull it on the boat. We did this thing called rolling the net to grab the fish from it. Sometimes the net could be heavy or the boat was still moving and it got too heavy. In that particular instance I missed my first swing with the hook and I had to shift my weight to reach the net the second time. That mixed with the boat moving a bit too far over the net made me grabbing it and trying to pull the net over too hard.
+The next morning I was still recovering from everything really. Several times on the boat you need to reach over the water to grab the net with a hook. We called it rolling the net. Sometimes the net is heavy or the boat is still moving and it gets too heavy to manage.
 
-I lost my balance and dropped the hook into the water because it was too heavy, and I was falling overboard. As I was falling I was able to twist my body and grab onto the ledge of the boat with both hands. I held on as my body fell into the water. Since I had waders to my chest I was able to stay dry. I then shimmied myself to the side of the boat and climbed back on.
+In that particular instance I missed my first swing and had to shift my weight to reach the net the second time. That mixed with the boat moving a bit too far over the net made me pull too hard. I lost my balance, dropped the hook into the water, and was falling overboard.
 
-That sequence of hooking and falling and catching maybe took a second and a half, so it was all reactionary. I think picking fish and grabbing lines and anchors had greatly increased my grip strength, which was very useful in that situation. Anyways it was a pretty dope experience and I got mad props from my peers haha.
+As I was falling I was able to twist my body and grab onto the ledge of the boat with both hands. Held on as my lower half went into the river. Since I had waders to my chest I stayed completely dry. I shimmied to the side and climbed back on.
+
+That whole sequence, hook, fall, catch, took maybe a second and a half. All reactionary. Picking fish and hauling anchors had seriously increased my grip strength, which I'm pretty sure saved me right there. Pretty dope experience and I got mad props from the crew.
 
 ---
 
