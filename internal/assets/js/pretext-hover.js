@@ -51,7 +51,7 @@
       span.style.left = '0';
       span.style.top = (idx * lineHeight) + 'px';
       span.style.whiteSpace = 'pre';
-      span.style.color = textColor;
+      span.style.color = 'inherit';
       paragraph.appendChild(span);
     }
   }
