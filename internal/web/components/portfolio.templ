@@ -2,11 +2,29 @@ package components
 
 import "personalwebsite/internal/portfolio"
 
-templ Portfolio(categories []portfolio.Category, photoToBlog map[string]string) {
+templ categoryCard(cat portfolio.Category) {
+	<a href={ templ.SafeURL("/portfolio/" + cat.Name) } class="group relative overflow-hidden border cursor-pointer block" style="border-color: var(--color-border); background-color: #1a1a1a;">
+		<div class="aspect-[3/2] overflow-hidden opacity-60 group-hover:opacity-40 transition-opacity duration-500">
+			if cat.CoverImage.Path != "" {
+				<img src={ cat.CoverImage.Path + "_w600" + cat.CoverImage.Ext } alt={ cat.Name } class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy"/>
+			} else {
+				<div class="w-full h-full flex items-center justify-center" style="background-color: rgba(128,128,128,0.1); color: #999;">
+					<span>No Preview</span>
+				</div>
+			}
+		</div>
+		<div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+			<h3 class="text-2xl font-serif mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300 text-white">{ cat.Name }</h3>
+			<div class="mt-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-150">
+				<span class="text-xs uppercase tracking-widest border-b pb-1 text-white" style="border-color: rgba(255,255,255,0.6);">View Collection</span>
+			</div>
+		</div>
+	</a>
+}
+
+templ Portfolio(portfolioCategories []portfolio.Category, adventureCategories []portfolio.Category, photoToBlog map[string]string) {
 	@Layout("Portfolio | Merl Martin") {
 		<div class="space-y-16">
-			
-            <!-- Header -->
 			<div class="text-center space-y-4">
 				<h1 class="text-4xl font-serif" style="color: var(--color-text-primary);">Portfolio</h1>
 				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
@@ -15,29 +33,27 @@ templ Portfolio(categories []portfolio.Category, photoToBlog map[string]string) 
 				</p>
 			</div>
 
-			<!-- Main Category Grid -->
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                for _, cat := range categories {
-                    <a href={ templ.SafeURL("/portfolio/" + cat.Name) } class="group relative overflow-hidden border cursor-pointer block" style="border-color: var(--color-border); background-color: #1a1a1a;">
-                        <div class="aspect-[3/2] overflow-hidden opacity-60 group-hover:opacity-40 transition-opacity duration-500">
-                            if cat.CoverImage.Path != "" {
-                                <img src={ cat.CoverImage.Path + "_w600" + cat.CoverImage.Ext } alt={ cat.Name } class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                            } else {
-                                <div class="w-full h-full flex items-center justify-center" style="background-color: rgba(128,128,128,0.1); color: #999;">
-                                    <span>No Preview</span>
-                                </div>
-                            }
-                        </div>
-                        
-                        <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
-                            <h3 data-pretext-shrinkwrap class="text-2xl font-serif mb-2 tracking-wide group-hover:-translate-y-2 transition-transform duration-300 text-white">{ cat.Name }</h3>
-                            <div class="mt-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-150">
-                                <span class="text-xs uppercase tracking-widest border-b pb-1 text-white" style="border-color: rgba(255,255,255,0.6);">View Collection</span>
-                            </div>
-                        </div>
-                    </a>
-                }
+				for _, cat := range portfolioCategories {
+					@categoryCard(cat)
+				}
 			</div>
+
+			if len(adventureCategories) > 0 {
+				<div class="text-center space-y-4 pt-8">
+					<h2 class="text-3xl font-serif" style="color: var(--color-text-primary);">Adventures</h2>
+					<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
+					<p class="max-w-2xl mx-auto" style="color: var(--color-text-secondary);">
+						Stories from the road, the river, and the wild.
+					</p>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+					for _, cat := range adventureCategories {
+						@categoryCard(cat)
+					}
+				</div>
+			}
 		</div>
 	}
 }

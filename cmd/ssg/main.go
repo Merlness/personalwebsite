@@ -54,7 +54,8 @@ func generatePortfolio(out string, pService portfolio.Service, bService blog.Ser
 
 	photoToBlog := blog.BuildPhotoToBlogMap(posts)
 
-	err = renderPage(filepath.Join(out, "portfolio", "index.html"), components.Portfolio(categories, photoToBlog).Render)
+	portfolioCats, adventureCats := portfolio.GroupCategories(categories)
+	err = renderPage(filepath.Join(out, "portfolio", "index.html"), components.Portfolio(portfolioCats, adventureCats, photoToBlog).Render)
 	if err != nil {
 		return err
 	}

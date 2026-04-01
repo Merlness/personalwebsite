@@ -300,3 +300,120 @@ func TestFilesystemService_GetCategory_ReturnsErrorForNonExistent(t *testing.T) 
 		t.Errorf("expected ErrCategoryNotFound, got %v", err)
 	}
 }
+
+func TestGroupCategories_SplitsPortfolioAndAdventures(t *testing.T) {
+	categories := []Category{
+		{Name: "Landscape", Group: "portfolio"},
+		{Name: "People", Group: "portfolio"},
+		{Name: "Alaska", Group: "adventure"},
+		{Name: "Wildlife", Group: "portfolio"},
+	}
+
+	portfolioCategories, adventureCategories := GroupCategories(categories)
+
+	if len(portfolioCategories) != 3 {
+		t.Fatalf("expected 3 portfolio categories, got %d", len(portfolioCategories))
+	}
+	if portfolioCategories[0].Name != "Landscape" {
+		t.Errorf("expected first portfolio category Landscape, got %s", portfolioCategories[0].Name)
+	}
+	if portfolioCategories[1].Name != "People" {
+		t.Errorf("expected second portfolio category People, got %s", portfolioCategories[1].Name)
+	}
+	if portfolioCategories[2].Name != "Wildlife" {
+		t.Errorf("expected third portfolio category Wildlife, got %s", portfolioCategories[2].Name)
+	}
+
+	if len(adventureCategories) != 1 {
+		t.Fatalf("expected 1 adventure category, got %d", len(adventureCategories))
+	}
+	if adventureCategories[0].Name != "Alaska" {
+		t.Errorf("expected adventure category Alaska, got %s", adventureCategories[0].Name)
+	}
+}
+
+func TestGroupCategories_EmptyInput(t *testing.T) {
+	var categories []Category
+
+	portfolioCategories, adventureCategories := GroupCategories(categories)
+
+	if len(portfolioCategories) != 0 {
+		t.Errorf("expected 0 portfolio categories, got %d", len(portfolioCategories))
+	}
+	if len(adventureCategories) != 0 {
+		t.Errorf("expected 0 adventure categories, got %d", len(adventureCategories))
+	}
+}
+
+func TestGroupCategories_AllPortfolio(t *testing.T) {
+	categories := []Category{
+		{Name: "Landscape", Group: "portfolio"},
+		{Name: "Structures", Group: "portfolio"},
+	}
+
+	portfolioCategories, adventureCategories := GroupCategories(categories)
+
+	if len(portfolioCategories) != 2 {
+		t.Fatalf("expected 2 portfolio categories, got %d", len(portfolioCategories))
+	}
+	if len(adventureCategories) != 0 {
+		t.Errorf("expected 0 adventure categories, got %d", len(adventureCategories))
+	}
+}
+
+func TestGroupCategories_AllAdventures(t *testing.T) {
+	categories := []Category{
+		{Name: "Alaska", Group: "adventure"},
+	}
+
+	portfolioCategories, adventureCategories := GroupCategories(categories)
+
+	if len(portfolioCategories) != 0 {
+		t.Errorf("expected 0 portfolio categories, got %d", len(portfolioCategories))
+	}
+	if len(adventureCategories) != 1 {
+		t.Fatalf("expected 1 adventure category, got %d", len(adventureCategories))
+	}
+	if adventureCategories[0].Name != "Alaska" {
+		t.Errorf("expected adventure category Alaska, got %s", adventureCategories[0].Name)
+	}
+}
+
+func TestGetCategories_AlaskaHasAdventureGroup(t *testing.T) {
+	tmpDir := t.TempDir()
+	landscapeDir := filepath.Join(tmpDir, "Landscape")
+	alaskaDir := filepath.Join(tmpDir, "Alaska")
+
+	if err := os.Mkdir(landscapeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(alaskaDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	createTempFile(t, filepath.Join(landscapeDir, "mountains.jpg"))
+	createTempFile(t, filepath.Join(alaskaDir, "glacier.jpg"))
+
+	svc := NewFilesystemService(tmpDir, "")
+
+	cats, err := svc.GetCategories()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	alaskaCat := findCategory(cats, "Alaska")
+	if alaskaCat == nil {
+		t.Fatal("expected Alaska category, not found")
+	}
+	if alaskaCat.Group != "adventure" {
+		t.Errorf("expected Alaska group 'adventure', got '%s'", alaskaCat.Group)
+	}
+
+	landscapeCat := findCategory(cats, "Landscape")
+	if landscapeCat == nil {
+		t.Fatal("expected Landscape category, not found")
+	}
+	if landscapeCat.Group != "portfolio" {
+		t.Errorf("expected Landscape group 'portfolio', got '%s'", landscapeCat.Group)
+	}
+}

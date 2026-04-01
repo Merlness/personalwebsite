@@ -17,6 +17,7 @@ type Image struct {
 
 type Category struct {
 	Name       string
+	Group      string
 	Images     []Image
 	CoverImage Image
 }
@@ -63,6 +64,28 @@ func (s *filesystemService) GetCategory(name string) (Category, error) {
 
 var preferredOrder = []string{"Landscape", "People", "Wildlife", "Structures"}
 
+var adventureCategories = map[string]bool{"Alaska": true}
+
+func groupForCategory(name string) string {
+	if adventureCategories[name] {
+		return "adventure"
+	}
+	return "portfolio"
+}
+
+func GroupCategories(categories []Category) ([]Category, []Category) {
+	var portfolioCategories []Category
+	var adventureCats []Category
+	for _, cat := range categories {
+		if cat.Group == "adventure" {
+			adventureCats = append(adventureCats, cat)
+		} else {
+			portfolioCategories = append(portfolioCategories, cat)
+		}
+	}
+	return portfolioCategories, adventureCats
+}
+
 func (s *filesystemService) GetCategories() ([]Category, error) {
 	entries, err := os.ReadDir(s.root)
 	if err != nil {
@@ -84,6 +107,7 @@ func (s *filesystemService) GetCategories() ([]Category, error) {
 			if err != nil {
 				return nil, err
 			}
+			cat.Group = groupForCategory(catName)
 			categories = append(categories, cat)
 			delete(existingDirs, catName)
 		}
@@ -100,6 +124,7 @@ func (s *filesystemService) GetCategories() ([]Category, error) {
 		if err != nil {
 			return nil, err
 		}
+		cat.Group = groupForCategory(catName)
 		categories = append(categories, cat)
 	}
 

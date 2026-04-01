@@ -35,8 +35,9 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service, ser
 			return
 		}
 
+		portfolioCats, adventureCats := portfolio.GroupCategories(categories)
 		photoToBlog := map[string]string{}
-		components.Portfolio(categories, photoToBlog).Render(request.Context(), writer)
+		components.Portfolio(portfolioCats, adventureCats, photoToBlog).Render(request.Context(), writer)
 	})
 
 	mux.HandleFunc("GET /portfolio/{category}", func(writer http.ResponseWriter, request *http.Request) {
