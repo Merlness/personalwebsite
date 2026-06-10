@@ -154,6 +154,7 @@ func main() {
 	fatal(generatePortfolio(outputDir, portfolioService, blogService))
 	fatal(generateBlog(outputDir, blogService))
 
+	fatal(copyDir("static", outputDir))
 	fatal(copyDir("internal/assets", filepath.Join(outputDir, "assets")))
 	fatal(copyDir("content/portfolio_optimized", filepath.Join(outputDir, "assets/portfolio")))
 	fatal(copyDir("content/aboutme_optimized", filepath.Join(outputDir, "assets/aboutme")))

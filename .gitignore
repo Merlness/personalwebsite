@@ -9,3 +9,6 @@ content/portfolio/**/*.png
 content/aboutme/*.jpg
 content/aboutme/*.jpeg
 content/aboutme/*.png
+
+# Build output (CI builds this fresh)
+dist/
