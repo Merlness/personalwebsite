@@ -7,6 +7,7 @@ import {
   addTask,
   completeTask,
   updateTask,
+  deleteTask,
   effectivePriority,
 } from "../js/tasks-model.js";
 
@@ -192,6 +193,20 @@ test("updateTask can move a task to another section", () => {
   const model = parseTasks(out);
   assert.equal(model.sections[0].tasks.length, 1);
   assert.equal(model.sections[1].tasks.length, 2);
+});
+
+test("deleteTask removes the line entirely and stays parseable", () => {
+  const target = parseTasks(SAMPLE).sections[0].tasks[0];
+  const out = deleteTask(SAMPLE, target.line);
+  assert.ok(!out.includes("Reach out to Monica"));
+  const model = parseTasks(out);
+  assert.equal(model.sections[0].tasks.length, 1);
+  assert.ok(!/\n{3,}/.test(out), "no triple blank lines left behind");
+  assert.equal(serializeTasks(model), out);
+});
+
+test("deleteTask on a missing line throws", () => {
+  assert.throws(() => deleteTask(SAMPLE, "- [ ] Low | Due: none | ghost | Added: 2026-01-01 | Source: x"));
 });
 
 // SOP table: 0-3 days or overdue = High, 4-7 = Medium, 8+ or none = Low. Manual raise wins.

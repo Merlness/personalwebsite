@@ -52,14 +52,29 @@ export class GitHubClient {
     });
   }
 
-  // get -> transform -> put; on sha conflict refetch and re-apply once.
-  async mutateFile(path, transform, message) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+  // get -> transform -> put. All writes through this client are serialized
+  // (concurrent callers queue up), and sha conflicts are retried with a
+  // growing backoff because the Contents API can serve a stale read right
+  // after a write.
+  async mutateFile(path, transform, message, opts = {}) {
+    const run = () => this.#mutateNow(path, transform, message, opts);
+    const turn = (this.#writeChain || Promise.resolve()).then(run, run);
+    this.#writeChain = turn.catch(() => {}); // a failure must not block later writes
+    return turn;
+  }
+
+  #writeChain = null;
+
+  async #mutateNow(path, transform, message, opts) {
+    const retries = opts.retries ?? 4;
+    const sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+    for (let attempt = 0; attempt < retries; attempt++) {
       const file = await this.getFile(path);
       const updated = transform(file.content);
       const res = await this.putFile(path, updated, file.sha, message);
       if (res.ok) return;
       if (res.status !== 409 && res.status !== 422) throw new Error(`write ${path} failed (${res.status})`);
+      if (attempt < retries - 1) await sleep(500 * (attempt + 1));
     }
     throw new Error(`write ${path} failed: conflict, try again`);
   }

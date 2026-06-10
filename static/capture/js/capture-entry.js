@@ -10,6 +10,12 @@ export function buildEntry(text, now, source = "capture-pwa") {
   return `- [ ] id: ${stamp}-${slug} | Captured: ${date} ${time} | Source: ${source} | Raw: ${raw}`;
 }
 
+// Insert several entries in one pass, preserving their order top-down.
+// Reduce in reverse: the last insert lands topmost.
+export function insertAllUnderUnprocessed(content, entries) {
+  return [...entries].reverse().reduce((c, e) => insertUnderUnprocessed(c, e), content);
+}
+
 export function insertUnderUnprocessed(content, entry) {
   const lines = content.split("\n");
   const i = lines.findIndex((l) => l.trim().toLowerCase() === "## unprocessed");

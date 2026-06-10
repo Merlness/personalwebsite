@@ -70,7 +70,52 @@ test("mutateFile gets, transforms, and puts with sha", async () => {
   assert.equal(body.branch, "main");
 });
 
-test("mutateFile retries once on sha conflict", async () => {
+test("mutateFile rides out repeated conflicts with backoff", async () => {
+  const fetch = fakeFetch([
+    { status: 200, body: { content: utf8ToB64("v1\n"), sha: "s1" } },
+    { status: 409, body: {} },
+    { status: 200, body: { content: utf8ToB64("v1\n"), sha: "s1" } }, // stale read
+    { status: 409, body: {} },
+    { status: 200, body: { content: utf8ToB64("v2\n"), sha: "s2" } },
+    { status: 200, body: {} },
+  ]);
+  const sleeps = [];
+  const gh = new GitHubClient(CFG, fetch);
+  await gh.mutateFile("inbox.md", (c) => c + "x\n", "msg", { sleep: async (ms) => sleeps.push(ms) });
+  assert.equal(fetch.calls.length, 6);
+  assert.equal(sleeps.length, 2, "slept between conflict retries");
+  assert.ok(sleeps[1] > sleeps[0], "backoff grows");
+});
+
+test("concurrent mutateFile calls are serialized, never interleaved", async () => {
+  const order = [];
+  const fetch = async (url, opts = {}) => {
+    const method = opts.method || "GET";
+    order.push(method);
+    if (method === "GET") return { ok: true, status: 200, json: async () => ({ content: utf8ToB64("x\n"), sha: "s" }) };
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+  const gh = new GitHubClient(CFG, fetch);
+  await Promise.all([
+    gh.mutateFile("inbox.md", (c) => c + "a", "m1"),
+    gh.mutateFile("inbox.md", (c) => c + "b", "m2"),
+  ]);
+  assert.deepEqual(order, ["GET", "PUT", "GET", "PUT"], "second write waits for the first");
+});
+
+test("a failed mutateFile does not block later writes", async () => {
+  const fetch = fakeFetch([
+    { status: 200, body: { content: utf8ToB64("v\n"), sha: "s" } },
+    { status: 500, body: {} },
+    { status: 200, body: { content: utf8ToB64("v\n"), sha: "s" } },
+    { status: 200, body: {} },
+  ]);
+  const gh = new GitHubClient(CFG, fetch);
+  await assert.rejects(() => gh.mutateFile("inbox.md", (c) => c, "m1"), /500/);
+  await gh.mutateFile("inbox.md", (c) => c, "m2"); // must not hang or reject
+});
+
+test("mutateFile re-applies the transform to fresh content after a conflict", async () => {
   const fetch = fakeFetch([
     { status: 200, body: { content: utf8ToB64("v1\n"), sha: "s1" } },
     { status: 409, body: {} },
@@ -78,13 +123,13 @@ test("mutateFile retries once on sha conflict", async () => {
     { status: 200, body: {} },
   ]);
   const gh = new GitHubClient(CFG, fetch);
-  await gh.mutateFile("tasks.md", (c) => c + "x\n", "msg");
+  await gh.mutateFile("tasks.md", (c) => c + "x\n", "msg", { sleep: async () => {} });
   const secondPut = JSON.parse(fetch.calls[3].opts.body);
   assert.equal(b64ToUtf8(secondPut.content), "v2\nx\n", "transform re-applied to fresh content");
   assert.equal(secondPut.sha, "s2");
 });
 
-test("mutateFile gives up after the retry and throws", async () => {
+test("mutateFile gives up after exhausting retries and throws", async () => {
   const fetch = fakeFetch([
     { status: 200, body: { content: utf8ToB64("v1\n"), sha: "s1" } },
     { status: 409, body: {} },
@@ -92,7 +137,10 @@ test("mutateFile gives up after the retry and throws", async () => {
     { status: 409, body: {} },
   ]);
   const gh = new GitHubClient(CFG, fetch);
-  await assert.rejects(() => gh.mutateFile("tasks.md", (c) => c, "msg"), /conflict/);
+  await assert.rejects(
+    () => gh.mutateFile("tasks.md", (c) => c, "msg", { retries: 2, sleep: async () => {} }),
+    /conflict/
+  );
 });
 
 test("mutateFile surfaces transform errors without writing", async () => {

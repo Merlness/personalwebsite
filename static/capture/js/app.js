@@ -1,8 +1,8 @@
 // UI shell for the organizer PWA. All parsing, formatting, scheduling, and
 // API logic lives in the tested modules; this file only wires DOM to them.
 
-import { parseTasks, addTask, completeTask, updateTask, effectivePriority } from "./tasks-model.js";
-import { buildEntry, insertUnderUnprocessed } from "./capture-entry.js";
+import { parseTasks, addTask, completeTask, updateTask, deleteTask, effectivePriority } from "./tasks-model.js";
+import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed } from "./capture-entry.js";
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { GitHubClient } from "./github-api.js";
 
@@ -206,8 +206,23 @@ function openTaskSheet(task) {
   $("tPriority").value = task ? task.priority : "Low";
   $("tDue").value = task && task.due ? task.due : "";
   $("sheetErr").textContent = "";
+  $("tDelete").classList.toggle("hidden", !task);
   $("taskSheet").classList.remove("hidden");
 }
+$("tDelete").onclick = async () => {
+  if (!editingLine || !confirm("Delete this task permanently? (It stays in git history.)")) return;
+  $("tDelete").disabled = true;
+  try {
+    await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, editingLine), "task: delete");
+    $("taskSheet").classList.add("hidden");
+    setStatus("Deleted", "ok");
+    loadTasks();
+  } catch (e) {
+    $("sheetErr").textContent = e.message;
+  } finally {
+    $("tDelete").disabled = false;
+  }
+};
 $("fab").onclick = () => openTaskSheet(null);
 $("tCancel").onclick = () => $("taskSheet").classList.add("hidden");
 $("tSave").onclick = async () => {
@@ -285,12 +300,25 @@ async function saveCapture(destKey, text) {
   const path = destKey === "inbox" ? FILES.inbox : FILES.workoutCapture;
   await gh.mutateFile(path, (c) => insertUnderUnprocessed(c, buildEntry(text, new Date())), `capture: ${destKey} note from phone`);
 }
+// Send all queued captures for each destination as ONE write, so a backlog
+// cannot race itself into conflicts.
 async function flushQueue() {
   if (!token) return;
-  let q = getQueue();
-  while (q.length) {
-    try { await saveCapture(q[0].dest, q[0].text); q.shift(); setQueue(q); }
-    catch { break; }
+  for (const destKey of ["inbox", "workout"]) {
+    const q = getQueue();
+    const mine = q.filter((i) => i.dest === destKey);
+    if (!mine.length) continue;
+    const path = destKey === "inbox" ? FILES.inbox : FILES.workoutCapture;
+    const entries = mine.map((i) => buildEntry(i.text, new Date(i.ts || Date.now())));
+    try {
+      await gh.mutateFile(path, (c) => insertAllUnderUnprocessed(c, entries),
+        `capture: ${mine.length} queued ${destKey} note${mine.length > 1 ? "s" : ""} from phone`);
+      setQueue(getQueue().filter((i) => i.dest !== destKey));
+      setStatus(`Sent ${mine.length} queued capture${mine.length > 1 ? "s" : ""}`, "ok");
+    } catch (e) {
+      setStatus(`Queue send failed (${e.message})`, "err");
+      break;
+    }
   }
 }
 $("saveBtn").onclick = async () => {

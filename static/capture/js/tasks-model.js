@@ -147,6 +147,12 @@ export function updateTask(md, line, changes) {
   return serializeTasks(model).replace(/\n{3,}/g, "\n\n");
 }
 
+export function deleteTask(md, line) {
+  const model = parseTasks(md);
+  removeLine(model, line);
+  return serializeTasks(model).replace(/\n{3,}/g, "\n\n");
+}
+
 const ORDER = { High: 0, Medium: 1, Low: 2 };
 
 export function effectivePriority(task, today) {

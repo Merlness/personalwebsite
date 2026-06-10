@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildEntry, insertUnderUnprocessed } from "../js/capture-entry.js";
+import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed } from "../js/capture-entry.js";
 
 const NOW = new Date(2026, 5, 10, 14, 30, 45); // 2026-06-10 14:30:45 local
 
@@ -35,6 +35,22 @@ test("insertUnderUnprocessed creates the heading when missing", () => {
   const out = insertUnderUnprocessed("# Inbox\n", "- [ ] id: new | Raw: fresh");
   assert.ok(out.includes("## Unprocessed"));
   assert.ok(out.includes("id: new"));
+});
+
+test("insertAllUnderUnprocessed lands every entry in one pass, oldest first", () => {
+  const md = "# Inbox\n\n## Unprocessed\n\n## Processed\n";
+  const out = insertAllUnderUnprocessed(md, [
+    "- [ ] id: a | Raw: first captured",
+    "- [ ] id: b | Raw: second captured",
+  ]);
+  assert.ok(out.includes("id: a") && out.includes("id: b"));
+  assert.ok(out.indexOf("id: a") < out.indexOf("id: b"), "queue order preserved top-down");
+  assert.ok(!/\n{3,}/.test(out));
+});
+
+test("insertAllUnderUnprocessed with empty list returns input unchanged", () => {
+  const md = "# Inbox\n\n## Unprocessed\n\n## Processed\n";
+  assert.equal(insertAllUnderUnprocessed(md, []), md);
 });
 
 test("insertUnderUnprocessed never produces triple blank lines", () => {
