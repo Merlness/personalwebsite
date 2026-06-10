@@ -112,16 +112,11 @@
     color: var(--text); font-size: 1.05rem; line-height: 1.5; padding: 14px; resize: none;
   }
   #note:focus { outline: none; border-color: var(--accent); }
-  #interim { color: var(--muted); font-size: 0.95rem; min-height: 1.4em; padding: 6px 4px; font-style: italic; }
-  .controls { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
-  #micBtn {
-    width: 72px; height: 72px; border-radius: 50%;
-    border: 2px solid var(--border); background: var(--panel);
-    color: var(--text); font-size: 1.8rem; cursor: pointer; flex-shrink: 0;
-    transition: border-color 0.2s, background 0.2s;
+  .controls { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+  header button.install {
+    font-size: 0.82rem; color: #111; background: var(--accent);
+    border-radius: 99px; padding: 6px 12px; font-weight: 700;
   }
-  #micBtn.listening { border-color: var(--danger); background: #2a1515; animation: pulse 1.4s infinite; }
-  @keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(224,92,92,0.12); } }
   #saveBtn {
     flex: 1; padding: 20px 0; border-radius: 14px; border: none;
     background: var(--accent); color: #111; font-size: 1.05rem; font-weight: 700; cursor: pointer;
@@ -178,6 +173,7 @@
 <header>
   <h1>Organizer</h1>
   <div class="hbtns">
+    <button id="installBtn" class="hidden install" aria-label="Install app">&#8681; Install</button>
     <button id="refreshBtn" aria-label="Refresh">&#8635;</button>
     <button id="gearBtn" aria-label="Settings">&#9881;</button>
   </div>
@@ -199,10 +195,8 @@
       <button id="destInbox" class="active">Inbox</button>
       <button id="destWorkout">Workout</button>
     </div>
-    <textarea id="note" placeholder="Tap the mic and talk, or type here."></textarea>
-    <div id="interim"></div>
+    <textarea id="note" placeholder="Type here, or use your keyboard's mic to dictate."></textarea>
     <div class="controls">
-      <button id="micBtn" aria-label="Dictate">&#127908;</button>
       <button id="saveBtn">Save</button>
     </div>
     <div id="pending"></div>
@@ -248,6 +242,7 @@
     <label for="setPin">PIN (required when setting a new token)</label>
     <input id="setPin" type="password" inputmode="numeric" autocomplete="off">
     <p class="hint">Create the token at github.com &gt; Settings &gt; Developer settings &gt; Fine-grained tokens. Grant access to the one organizer repo only, with Contents read and write. The token is encrypted with your PIN and never leaves this device except to call api.github.com.</p>
+    <p class="hint">To install: tap the Install button in the header when it appears, or Chrome menu (&#8942;) &gt; "Add to Home screen" &gt; Install.</p>
     <div class="err" id="setErr"></div>
     <div class="row">
       <button id="setCancelBtn">Cancel</button>

@@ -25,6 +25,18 @@ test("utf8 base64 round-trips multibyte text", () => {
   assert.equal(b64ToUtf8(utf8ToB64(s)), s);
 });
 
+// Native window.fetch throws "Illegal invocation" unless called with the
+// global as its receiver. Emulate that strictness to pin the binding.
+test("client invokes fetch with the global as receiver, never itself", async () => {
+  function strictFetch() {
+    if (this !== globalThis) throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+    return { ok: true, status: 200, json: async () => ({ content: utf8ToB64("x"), sha: "s" }) };
+  }
+  const gh = new GitHubClient(CFG, strictFetch);
+  const file = await gh.getFile("inbox.md");
+  assert.equal(file.content, "x");
+});
+
 test("getFile decodes content and returns sha", async () => {
   const fetch = fakeFetch([
     { status: 200, body: { content: utf8ToB64("hello\n"), sha: "abc" } },

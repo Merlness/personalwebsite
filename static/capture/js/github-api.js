@@ -17,7 +17,9 @@ export function b64ToUtf8(s) {
 export class GitHubClient {
   constructor(cfg, fetchFn = globalThis.fetch) {
     this.cfg = cfg;
-    this.fetch = fetchFn;
+    // Bind to the global: native fetch throws "Illegal invocation" when
+    // called with any other receiver (like this client via this.fetch()).
+    this.fetch = fetchFn.bind(globalThis);
   }
 
   async request(path, opts = {}) {

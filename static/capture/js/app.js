@@ -3,7 +3,6 @@
 
 import { parseTasks, addTask, completeTask, updateTask, effectivePriority } from "./tasks-model.js";
 import { buildEntry, insertUnderUnprocessed } from "./capture-entry.js";
-import { assembleFinals } from "./transcript.js";
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { GitHubClient } from "./github-api.js";
 
@@ -21,7 +20,6 @@ const SECTIONS = ["Business", "Personal", "Financial"];
 let token = null;
 let gh = null;
 let dest = "inbox";
-let listening = false;
 let editingLine = null; // task line being edited, null = adding
 
 const $ = (id) => document.getElementById(id);
@@ -298,7 +296,6 @@ async function flushQueue() {
 $("saveBtn").onclick = async () => {
   const text = $("note").value.trim();
   if (!text) return;
-  stopMic();
   $("saveBtn").disabled = true;
   setStatus("Saving…");
   try {
@@ -322,40 +319,21 @@ function setDest(d) {
 $("destInbox").onclick = () => setDest("inbox");
 $("destWorkout").onclick = () => setDest("workout");
 
-// ---------- speech ----------
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null;
-let dictBase = "";
-function startMic() {
-  if (!SR) { setStatus("Speech recognition not supported in this browser", "err"); return; }
-  dictBase = $("note").value.trim();
-  rec = new SR();
-  rec.lang = "en-US";
-  rec.continuous = true;
-  rec.interimResults = true;
-  rec.onresult = (ev) => {
-    let interim = "";
-    for (let i = 0; i < ev.results.length; i++) {
-      if (!ev.results[i].isFinal) interim += ev.results[i][0].transcript;
-    }
-    $("note").value = (dictBase + " " + assembleFinals(ev.results)).trim();
-    $("interim").textContent = interim;
-  };
-  rec.onend = () => {
-    if (listening) { dictBase = $("note").value.trim(); try { rec.start(); } catch {} }
-  };
-  rec.onerror = (e) => { if (e.error === "not-allowed") { setStatus("Microphone permission denied", "err"); stopMic(); } };
-  rec.start();
-  listening = true;
-  $("micBtn").classList.add("listening");
-}
-function stopMic() {
-  listening = false;
-  $("micBtn").classList.remove("listening");
-  $("interim").textContent = "";
-  if (rec) try { rec.stop(); } catch {}
-}
-$("micBtn").onclick = () => (listening ? stopMic() : startMic());
+// ---------- install prompt ----------
+let installEvent = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEvent = e;
+  $("installBtn").classList.remove("hidden");
+});
+$("installBtn").onclick = async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  const choice = await installEvent.userChoice;
+  if (choice.outcome === "accepted") $("installBtn").classList.add("hidden");
+  installEvent = null;
+};
+window.addEventListener("appinstalled", () => $("installBtn").classList.add("hidden"));
 
 // ---------- unlock & settings ----------
 function showUnlock() {
