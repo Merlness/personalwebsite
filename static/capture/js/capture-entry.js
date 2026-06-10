@@ -10,6 +10,24 @@ export function buildEntry(text, now, source = "capture-pwa") {
   return `- [ ] id: ${stamp}-${slug} | Captured: ${date} ${time} | Source: ${source} | Raw: ${raw}`;
 }
 
+const ENTRY_RE = /^- \[ \] id: (\S+) \| Captured: (.+?) \| Source: (.+?) \| Raw: (.+)$/;
+
+// List unprocessed captures (between "## Unprocessed" and the next heading),
+// skipping anything inside HTML comments.
+export function parseUnprocessed(md) {
+  const out = [];
+  let inSection = false, inComment = false;
+  for (const line of md.split("\n")) {
+    if (/^## /.test(line)) { inSection = line.trim().toLowerCase() === "## unprocessed"; continue; }
+    if (line.trimStart().startsWith("<!--")) inComment = true;
+    if (inComment) { if (line.includes("-->")) inComment = false; continue; }
+    if (!inSection) continue;
+    const m = line.match(ENTRY_RE);
+    if (m) out.push({ id: m[1], captured: m[2], source: m[3], raw: m[4] });
+  }
+  return out;
+}
+
 // Insert several entries in one pass, preserving their order top-down.
 // Reduce in reverse: the last insert lands topmost.
 export function insertAllUnderUnprocessed(content, entries) {

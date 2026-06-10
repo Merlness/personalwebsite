@@ -54,13 +54,14 @@ test("getFile throws with status on failure", async () => {
   await assert.rejects(() => gh.getFile("nope.md"), /404/);
 });
 
-test("mutateFile gets, transforms, and puts with sha", async () => {
+test("mutateFile gets, transforms, puts with sha, and resolves with the written content", async () => {
   const fetch = fakeFetch([
     { status: 200, body: { content: utf8ToB64("a\n"), sha: "s1" } },
     { status: 200, body: {} },
   ]);
   const gh = new GitHubClient(CFG, fetch);
-  await gh.mutateFile("tasks.md", (c) => c + "b\n", "msg");
+  const written = await gh.mutateFile("tasks.md", (c) => c + "b\n", "msg");
+  assert.equal(written, "a\nb\n", "caller can render the written state without a stale refetch");
   const put = fetch.calls[1];
   const body = JSON.parse(put.opts.body);
   assert.equal(put.opts.method, "PUT");

@@ -1,4 +1,4 @@
-const CACHE = "capture-v5";
+const CACHE = "capture-v6";
 const SHELL = [
   "./",
   "index.html",

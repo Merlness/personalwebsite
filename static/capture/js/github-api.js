@@ -72,7 +72,9 @@ export class GitHubClient {
       const file = await this.getFile(path);
       const updated = transform(file.content);
       const res = await this.putFile(path, updated, file.sha, message);
-      if (res.ok) return;
+      // resolve with what was written: a refetch right after a write can
+      // return stale content, so callers must render from this instead
+      if (res.ok) return updated;
       if (res.status !== 409 && res.status !== 422) throw new Error(`write ${path} failed (${res.status})`);
       if (attempt < retries - 1) await sleep(500 * (attempt + 1));
     }

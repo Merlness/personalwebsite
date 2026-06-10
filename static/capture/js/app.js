@@ -2,7 +2,7 @@
 // API logic lives in the tested modules; this file only wires DOM to them.
 
 import { parseTasks, addTask, completeTask, updateTask, deleteTask, effectivePriority } from "./tasks-model.js";
-import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed } from "./capture-entry.js";
+import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed } from "./capture-entry.js";
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { GitHubClient } from "./github-api.js";
 
@@ -69,7 +69,17 @@ function cachePut(path, content) {
   c[path] = { content, at: Date.now() };
   localStorage.setItem(LS.cache, JSON.stringify(c));
 }
+// For a short window after we write a file, trust our own written copy:
+// the Contents API can serve stale reads and visually undo the action.
+const recentWrites = {};
+function noteWritten(path, content) {
+  recentWrites[path] = { content, at: Date.now() };
+  cachePut(path, content);
+}
+
 async function readFile(path) {
+  const w = recentWrites[path];
+  if (w && Date.now() - w.at < 60000) return { content: w.content, offline: false };
   try {
     const f = await gh.getFile(path);
     cachePut(path, f.content);
@@ -106,15 +116,25 @@ for (const t of ["tasks", "workout", "capture"]) $(`nav-${t}`).onclick = () => s
 // ---------- tasks tab ----------
 const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
 
+let inboxItems = []; // last known unprocessed captures, for re-renders
+
 async function loadTasks() {
   if (!token) return;
   $("taskList").innerHTML = '<div class="muted pad">Loading…</div>';
   try {
-    const { content, offline } = await readFile(FILES.tasks);
-    renderTasks(content, offline);
+    const [tasks, inbox] = await Promise.all([readFile(FILES.tasks), readFile(FILES.inbox)]);
+    inboxItems = parseUnprocessed(inbox.content);
+    renderTasks(tasks.content, tasks.offline);
   } catch (e) {
     $("taskList").innerHTML = `<div class="muted pad">Could not load tasks (${e.message})</div>`;
   }
+}
+
+// Re-render from content we just wrote: a refetch right after a write can
+// return a stale version and visually undo the action.
+function applyWritten(written) {
+  noteWritten(FILES.tasks, written);
+  renderTasks(written, false);
 }
 
 function renderTasks(md, offline) {
@@ -150,6 +170,17 @@ function renderTasks(md, offline) {
     }
     root.appendChild(el("div", "muted pad", 'Triage these with "run my capture intake" at a machine.'));
   }
+
+  if (inboxItems.length) {
+    root.appendChild(el("div", "section-h", `Inbox (${inboxItems.length} unprocessed)`));
+    for (const c of inboxItems) {
+      const row = el("div", "task-row review");
+      row.appendChild(el("div", "task-text", c.raw));
+      row.appendChild(el("div", "task-meta", `captured ${c.captured}`));
+      root.appendChild(row);
+    }
+    root.appendChild(el("div", "muted pad", "Captures wait here until triage routes them. To create a task directly, use the + button."));
+  }
 }
 
 function taskRow(t, today, offline) {
@@ -163,9 +194,9 @@ function taskRow(t, today, offline) {
     box.disabled = true;
     row.classList.add("fading");
     try {
-      await gh.mutateFile(FILES.tasks, (c) => completeTask(c, t.line, todayISO()), `task: complete "${t.text.slice(0, 50)}"`);
+      const written = await gh.mutateFile(FILES.tasks, (c) => completeTask(c, t.line, todayISO()), `task: complete "${t.text.slice(0, 50)}"`);
       setStatus("Completed, archived", "ok");
-      loadTasks();
+      applyWritten(written);
     } catch (e) {
       row.classList.remove("fading");
       box.disabled = false;
@@ -213,10 +244,10 @@ $("tDelete").onclick = async () => {
   if (!editingLine || !confirm("Delete this task permanently? (It stays in git history.)")) return;
   $("tDelete").disabled = true;
   try {
-    await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, editingLine), "task: delete");
+    const written = await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, editingLine), "task: delete");
     $("taskSheet").classList.add("hidden");
     setStatus("Deleted", "ok");
-    loadTasks();
+    applyWritten(written);
   } catch (e) {
     $("sheetErr").textContent = e.message;
   } finally {
@@ -236,14 +267,15 @@ $("tSave").onclick = async () => {
   };
   $("tSave").disabled = true;
   try {
+    let written;
     if (editingLine) {
-      await gh.mutateFile(FILES.tasks, (c) => updateTask(c, editingLine, fields), `task: edit "${text.slice(0, 50)}"`);
+      written = await gh.mutateFile(FILES.tasks, (c) => updateTask(c, editingLine, fields), `task: edit "${text.slice(0, 50)}"`);
     } else {
-      await gh.mutateFile(FILES.tasks, (c) => addTask(c, { ...fields, added: todayISO(), source: "capture-pwa" }), `task: add "${text.slice(0, 50)}"`);
+      written = await gh.mutateFile(FILES.tasks, (c) => addTask(c, { ...fields, added: todayISO(), source: "capture-pwa" }), `task: add "${text.slice(0, 50)}"`);
     }
     $("taskSheet").classList.add("hidden");
     setStatus("Saved", "ok");
-    loadTasks();
+    applyWritten(written);
   } catch (e) {
     $("sheetErr").textContent = e.message;
   } finally {
@@ -298,7 +330,9 @@ function setQueue(q) {
 }
 async function saveCapture(destKey, text) {
   const path = destKey === "inbox" ? FILES.inbox : FILES.workoutCapture;
-  await gh.mutateFile(path, (c) => insertUnderUnprocessed(c, buildEntry(text, new Date())), `capture: ${destKey} note from phone`);
+  const written = await gh.mutateFile(path, (c) => insertUnderUnprocessed(c, buildEntry(text, new Date())), `capture: ${destKey} note from phone`);
+  noteWritten(path, written);
+  if (destKey === "inbox") inboxItems = parseUnprocessed(written);
 }
 // Send all queued captures for each destination as ONE write, so a backlog
 // cannot race itself into conflicts.
@@ -311,8 +345,10 @@ async function flushQueue() {
     const path = destKey === "inbox" ? FILES.inbox : FILES.workoutCapture;
     const entries = mine.map((i) => buildEntry(i.text, new Date(i.ts || Date.now())));
     try {
-      await gh.mutateFile(path, (c) => insertAllUnderUnprocessed(c, entries),
+      const written = await gh.mutateFile(path, (c) => insertAllUnderUnprocessed(c, entries),
         `capture: ${mine.length} queued ${destKey} note${mine.length > 1 ? "s" : ""} from phone`);
+      noteWritten(path, written);
+      if (destKey === "inbox") inboxItems = parseUnprocessed(written);
       setQueue(getQueue().filter((i) => i.dest !== destKey));
       setStatus(`Sent ${mine.length} queued capture${mine.length > 1 ? "s" : ""}`, "ok");
     } catch (e) {
