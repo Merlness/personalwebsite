@@ -386,23 +386,45 @@ $("destWorkout").onclick = () => setDest("workout");
 // ---------- speech ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
+let dictBase = ""; // textarea content when this recognition session started
+
+// Android Chrome reports cumulative finals (each contains the whole
+// transcript so far); desktop reports distinct segments. Detect which
+// by checking if a new final extends the accumulated text.
+function assembleFinals(results) {
+  let finals = "";
+  for (let i = 0; i < results.length; i++) {
+    if (!results[i].isFinal) continue;
+    const t = results[i][0].transcript.trim();
+    if (!t) continue;
+    if (t.toLowerCase().startsWith(finals.toLowerCase())) finals = t;
+    else if (finals.toLowerCase().endsWith(t.toLowerCase())) continue;
+    else finals += (finals ? " " : "") + t;
+  }
+  return finals;
+}
+
 function startMic() {
   if (!SR) { setStatus("Speech recognition not supported in this browser", "err"); return; }
+  dictBase = note.value.trim();
   rec = new SR();
   rec.lang = "en-US";
   rec.continuous = true;
   rec.interimResults = true;
   rec.onresult = (ev) => {
     let interim = "";
-    for (let i = ev.resultIndex; i < ev.results.length; i++) {
-      const t = ev.results[i][0].transcript;
-      if (ev.results[i].isFinal) {
-        note.value = (note.value.trim() + " " + t.trim()).trim();
-      } else interim += t;
+    for (let i = 0; i < ev.results.length; i++) {
+      if (!ev.results[i].isFinal) interim += ev.results[i][0].transcript;
     }
+    note.value = (dictBase + " " + assembleFinals(ev.results)).trim();
     $("interim").textContent = interim;
   };
-  rec.onend = () => { if (listening) try { rec.start(); } catch {} };
+  rec.onend = () => {
+    if (listening) {
+      dictBase = note.value.trim(); // results reset on restart, fold them in
+      try { rec.start(); } catch {}
+    }
+  };
   rec.onerror = (e) => {
     if (e.error === "not-allowed") { setStatus("Microphone permission denied", "err"); stopMic(); }
   };
