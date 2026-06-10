@@ -28,6 +28,23 @@ export function parseUnprocessed(md) {
   return out;
 }
 
+// Move an unprocessed entry to the Processed section with a result note.
+export function markProcessed(md, id, result, date) {
+  const lines = md.split("\n");
+  const idx = lines.findIndex((l) => {
+    const m = l.match(ENTRY_RE);
+    return m && m[1] === id;
+  });
+  if (idx === -1) throw new Error("capture not found in Unprocessed: " + id);
+  const m = lines[idx].match(ENTRY_RE);
+  lines.splice(idx, 1);
+  const procLine = `- [x] id: ${m[1]} | Processed: ${date} | Result: ${result} | Raw: ${m[4]}`;
+  const proc = lines.findIndex((l) => l.trim().toLowerCase() === "## processed");
+  if (proc === -1) lines.push("", "## Processed", "", procLine);
+  else lines.splice(proc + 1, 0, "", procLine);
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
 // Insert several entries in one pass, preserving their order top-down.
 // Reduce in reverse: the last insert lands topmost.
 export function insertAllUnderUnprocessed(content, entries) {

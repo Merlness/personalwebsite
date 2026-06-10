@@ -2,8 +2,10 @@
 // API logic lives in the tested modules; this file only wires DOM to them.
 
 import { parseTasks, addTask, completeTask, updateTask, deleteTask, effectivePriority } from "./tasks-model.js";
-import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed } from "./capture-entry.js";
+import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed, markProcessed } from "./capture-entry.js";
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
+import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
+import { classifyCapture } from "./gemini.js";
 import { GitHubClient } from "./github-api.js";
 
 const FILES = {
@@ -18,9 +20,11 @@ const LS = { settings: "capture.settings", vault: "capture.vault", queue: "captu
 const SECTIONS = ["Business", "Personal", "Financial"];
 
 let token = null;
+let geminiKey = null;
 let gh = null;
 let dest = "inbox";
-let editingLine = null; // task line being edited, null = adding
+// what the task sheet is doing: {mode:'add'|'edit'|'promote-inbox'|'promote-review', ...}
+let sheetCtx = { mode: "add" };
 
 const $ = (id) => document.getElementById(id);
 const todayISO = () => {
@@ -42,17 +46,23 @@ async function deriveKey(pin, salt) {
   const base = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
-async function storeToken(pin, tok) {
+async function storeKeys(pin, keys) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(pin, salt);
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(tok));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(JSON.stringify(keys)));
   localStorage.setItem(LS.vault, JSON.stringify({ salt: b64(salt), iv: b64(iv), ct: b64(ct) }));
 }
-async function unlockToken(pin) {
+// vault v1 stored a bare GitHub token string; v2 stores JSON {gh, gemini}
+async function unlockKeys(pin) {
   const v = JSON.parse(localStorage.getItem(LS.vault));
   const key = await deriveKey(pin, unb64(v.salt));
-  return dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(v.iv) }, key, unb64(v.ct)));
+  const plain = dec.decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(v.iv) }, key, unb64(v.ct)));
+  try {
+    const parsed = JSON.parse(plain);
+    if (parsed && typeof parsed === "object" && parsed.gh) return parsed;
+  } catch {}
+  return { gh: plain, gemini: null };
 }
 
 function makeClient() {
@@ -165,10 +175,19 @@ function renderTasks(md, offline) {
     for (const r of pending.reviews) {
       const row = el("div", "task-row review");
       row.appendChild(el("div", "task-text", r.raw));
-      row.appendChild(el("div", "task-meta", `from ${r.source}`));
+      const meta = el("div", "task-meta");
+      meta.appendChild(el("span", "due", `from ${r.source}`));
+      meta.appendChild(actionBtn("→ Task", () => openTaskSheet(null, { mode: "promote-review", line: r.line, raw: r.raw })));
+      meta.appendChild(actionBtn("Dismiss", async () => {
+        if (!confirm("Remove this from Pending Review?")) return;
+        try {
+          const written = await gh.mutateFile(FILES.tasks, (x) => deleteTask(x, r.line), "task: dismiss pending review item");
+          applyWritten(written);
+        } catch (e) { setStatus(e.message, "err"); }
+      }));
+      row.appendChild(meta);
       root.appendChild(row);
     }
-    root.appendChild(el("div", "muted pad", 'Triage these with "run my capture intake" at a machine.'));
   }
 
   if (inboxItems.length) {
@@ -176,11 +195,29 @@ function renderTasks(md, offline) {
     for (const c of inboxItems) {
       const row = el("div", "task-row review");
       row.appendChild(el("div", "task-text", c.raw));
-      row.appendChild(el("div", "task-meta", `captured ${c.captured}`));
+      const meta = el("div", "task-meta");
+      meta.appendChild(el("span", "due", `captured ${c.captured}`));
+      meta.appendChild(actionBtn("→ Task", () => openTaskSheet(null, { mode: "promote-inbox", id: c.id, raw: c.raw })));
+      meta.appendChild(actionBtn("Dismiss", async () => {
+        if (!confirm("Dismiss this capture?")) return;
+        try {
+          const written = await gh.mutateFile(FILES.inbox, (x) => markProcessed(x, c.id, "Dismissed from phone", todayISO()), "capture: dismiss from phone");
+          noteWritten(FILES.inbox, written);
+          inboxItems = parseUnprocessed(written);
+          loadTasks();
+        } catch (e) { setStatus(e.message, "err"); }
+      }));
+      row.appendChild(meta);
       root.appendChild(row);
     }
-    root.appendChild(el("div", "muted pad", "Captures wait here until triage routes them. To create a task directly, use the + button."));
+    root.appendChild(el("div", "muted pad", "Promote a capture into a task, or leave it for the scheduled triage run."));
   }
+}
+
+function actionBtn(label, onclick) {
+  const b = el("button", "mini-btn", label);
+  b.onclick = (ev) => { ev.stopPropagation(); onclick(); };
+  return b;
 }
 
 function taskRow(t, today, offline) {
@@ -229,22 +266,23 @@ function el(tag, cls, text) {
 }
 
 // ---------- task add/edit sheet ----------
-function openTaskSheet(task) {
-  editingLine = task ? task.line : null;
-  $("sheetTitle").textContent = task ? "Edit task" : "New task";
-  $("tText").value = task ? task.text : "";
+function openTaskSheet(task, ctx) {
+  sheetCtx = ctx || (task ? { mode: "edit", line: task.line } : { mode: "add" });
+  const titles = { add: "New task", edit: "Edit task", "promote-inbox": "Promote capture", "promote-review": "Promote to task" };
+  $("sheetTitle").textContent = titles[sheetCtx.mode];
+  $("tText").value = task ? task.text : (sheetCtx.raw || "");
   $("tSection").value = task ? task.section : "Business";
   $("tPriority").value = task ? task.priority : "Low";
   $("tDue").value = task && task.due ? task.due : "";
   $("sheetErr").textContent = "";
-  $("tDelete").classList.toggle("hidden", !task);
+  $("tDelete").classList.toggle("hidden", sheetCtx.mode !== "edit");
   $("taskSheet").classList.remove("hidden");
 }
 $("tDelete").onclick = async () => {
-  if (!editingLine || !confirm("Delete this task permanently? (It stays in git history.)")) return;
+  if (sheetCtx.mode !== "edit" || !confirm("Delete this task permanently? (It stays in git history.)")) return;
   $("tDelete").disabled = true;
   try {
-    const written = await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, editingLine), "task: delete");
+    const written = await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, sheetCtx.line), "task: delete");
     $("taskSheet").classList.add("hidden");
     setStatus("Deleted", "ok");
     applyWritten(written);
@@ -267,11 +305,19 @@ $("tSave").onclick = async () => {
   };
   $("tSave").disabled = true;
   try {
+    const addFields = { ...fields, added: todayISO(), source: "capture-pwa" };
     let written;
-    if (editingLine) {
-      written = await gh.mutateFile(FILES.tasks, (c) => updateTask(c, editingLine, fields), `task: edit "${text.slice(0, 50)}"`);
+    if (sheetCtx.mode === "edit") {
+      written = await gh.mutateFile(FILES.tasks, (c) => updateTask(c, sheetCtx.line, fields), `task: edit "${text.slice(0, 50)}"`);
+    } else if (sheetCtx.mode === "promote-review") {
+      written = await gh.mutateFile(FILES.tasks, (c) => addTask(deleteTask(c, sheetCtx.line), addFields), `task: promote from pending review`);
     } else {
-      written = await gh.mutateFile(FILES.tasks, (c) => addTask(c, { ...fields, added: todayISO(), source: "capture-pwa" }), `task: add "${text.slice(0, 50)}"`);
+      written = await gh.mutateFile(FILES.tasks, (c) => addTask(c, addFields), `task: add "${text.slice(0, 50)}"`);
+    }
+    if (sheetCtx.mode === "promote-inbox") {
+      const inboxWritten = await gh.mutateFile(FILES.inbox, (c) => markProcessed(c, sheetCtx.id, `Promoted to ${fields.section}`, todayISO()), "capture: promote to task");
+      noteWritten(FILES.inbox, inboxWritten);
+      inboxItems = parseUnprocessed(inboxWritten);
     }
     $("taskSheet").classList.add("hidden");
     setStatus("Saved", "ok");
@@ -298,8 +344,8 @@ async function loadWorkout() {
     root.innerHTML = "";
     if (offline) root.appendChild(el("div", "offline-note", "Offline copy"));
     root.appendChild(el("div", "section-h", activeDay ? `Up next: ${activeDay}` : "Today"));
-    const pre = el("div", "card-body", card || "No card generated yet. Ask me to prep your workout card.");
-    root.appendChild(pre);
+    if (card) renderWorkoutCard(root, activeDay, card);
+    else root.appendChild(el("div", "card-body", "No card generated yet. Ask me to prep your workout card."));
 
     const week = weekAhead({ ledgerMd: ledger.content, programMd: program.content, today: todayISO() });
     const wl = $("weekList");
@@ -316,6 +362,113 @@ async function loadWorkout() {
   } catch (e) {
     $("workoutCard").innerHTML = `<div class="muted pad">Could not load workout (${e.message})</div>`;
   }
+}
+
+// ---------- interactive workout card ----------
+const WS_KEY = "capture.workoutState";
+function getWorkoutState(day) {
+  try {
+    const s = JSON.parse(localStorage.getItem(WS_KEY));
+    if (s && s.day === day) return s;
+  } catch {}
+  return { day, checked: {}, fields: {} };
+}
+function putWorkoutState(s) { localStorage.setItem(WS_KEY, JSON.stringify(s)); }
+
+function renderWorkoutCard(root, activeDay, card) {
+  const state = getWorkoutState(activeDay);
+  const items = parsePlanItems(card);
+
+  // context above the plan (goal, hip check, timing)
+  const head = card.split(/^PLAN$/m)[0].trim();
+  if (head) root.appendChild(el("div", "card-body", head));
+
+  // adjustment selector
+  const adjRow = el("div", "adj-row");
+  adjRow.appendChild(el("span", "muted", "Today I'm at:"));
+  for (const lvl of ["100", "80", "70", "50"]) {
+    const b = el("button", "adj-chip" + ((state.fields.adjustment || "100") === lvl ? " active" : ""), lvl + "%");
+    b.onclick = () => {
+      state.fields.adjustment = lvl;
+      putWorkoutState(state);
+      loadWorkout();
+    };
+    adjRow.appendChild(b);
+  }
+  root.appendChild(adjRow);
+  const ADJ_HINTS = {
+    100: "Run the planned session.",
+    80: "Keep the main pattern; drop one accessory set or cut load 5-10%.",
+    70: "Cap effort at RPE 7, cut sets ~25%, skip the finisher.",
+    50: "Recovery only: easy cardio, light accessories, mobility.",
+  };
+  root.appendChild(el("div", "muted pad", ADJ_HINTS[state.fields.adjustment || "100"]));
+
+  // checkable plan
+  let lastGroup = null;
+  for (const it of items) {
+    if (it.group !== lastGroup) { root.appendChild(el("div", "wo-group", it.group)); lastGroup = it.group; }
+    const row = el("div", "task-row wo-item" + (state.checked[it.text] ? " done" : ""));
+    const box = el("button", "checkbox" + (state.checked[it.text] ? " checked" : ""));
+    box.onclick = () => {
+      state.checked[it.text] = !state.checked[it.text];
+      putWorkoutState(state);
+      loadWorkout();
+    };
+    row.appendChild(box);
+    row.appendChild(el("div", "task-text", it.text));
+    root.appendChild(row);
+  }
+
+  // actuals form
+  root.appendChild(el("div", "wo-group", "Actuals"));
+  const form = el("div", "wo-form");
+  const field = (id, label, type = "text") => {
+    const wrap = el("div", "wo-field");
+    wrap.appendChild(el("label", "", label));
+    const inp = document.createElement(type === "textarea" ? "textarea" : "input");
+    inp.id = id;
+    if (type !== "textarea") inp.type = "text";
+    inp.value = state.fields[id] || "";
+    inp.oninput = () => { state.fields[id] = inp.value; putWorkoutState(state); };
+    wrap.appendChild(inp);
+    return wrap;
+  };
+  const row3 = el("div", "wo-3");
+  row3.appendChild(field("woReadiness", "Readiness %"));
+  row3.appendChild(field("woHipBefore", "Hip before /10"));
+  row3.appendChild(field("woHipAfter", "Hip after /10"));
+  form.appendChild(row3);
+  form.appendChild(field("woNotes", "Notes (weights, reps, how it felt)", "textarea"));
+  const logBtn = el("button", "wo-log", "Log workout");
+  logBtn.onclick = async () => {
+    const completed = items.filter((i) => state.checked[i.text]).map((i) => i.text);
+    const skipped = items.filter((i) => !state.checked[i.text]).map((i) => i.text);
+    if (!completed.length && !state.fields.woNotes) { setStatus("Check off what you did or add a note first", "err"); return; }
+    const raw = buildWorkoutLog({
+      day: activeDay || "unknown day",
+      readiness: state.fields.woReadiness || "",
+      hipBefore: state.fields.woHipBefore || "",
+      hipAfter: state.fields.woHipAfter || "",
+      adjustment: state.fields.adjustment || "100",
+      completed, skipped,
+      notes: state.fields.woNotes || "",
+    });
+    logBtn.disabled = true;
+    try {
+      const written = await gh.mutateFile(FILES.workoutCapture, (c) => insertUnderUnprocessed(c, buildEntry(raw, new Date())), "workout: log from phone");
+      noteWritten(FILES.workoutCapture, written);
+      localStorage.removeItem(WS_KEY);
+      setStatus("Workout logged. The scheduled run will update your ledger.", "ok");
+      loadWorkout();
+    } catch (e) {
+      setStatus(e.message, "err");
+    } finally {
+      logBtn.disabled = false;
+    }
+  };
+  form.appendChild(logBtn);
+  root.appendChild(form);
 }
 
 // ---------- capture tab ----------
@@ -363,9 +516,23 @@ $("saveBtn").onclick = async () => {
   $("saveBtn").disabled = true;
   setStatus("Saving…");
   try {
+    // with a Gemini key, clear inbox captures file themselves as tasks
+    if (dest === "inbox" && geminiKey) {
+      const c = await classifyCapture(text, { apiKey: geminiKey, today: todayISO() });
+      if (c.action === "task") {
+        const written = await gh.mutateFile(FILES.tasks,
+          (x) => addTask(x, { section: c.section, priority: c.priority, due: c.due, text: c.text, added: todayISO(), source: "capture-pwa (auto)" }),
+          `task: auto-file "${c.text.slice(0, 50)}"`);
+        noteWritten(FILES.tasks, written);
+        $("note").value = "";
+        setStatus(`Filed: ${c.section} / ${c.priority}${c.due ? " / due " + c.due : ""}`, "ok");
+        flushQueue();
+        return;
+      }
+    }
     await saveCapture(dest, text);
     $("note").value = "";
-    setStatus(`Saved to ${dest === "inbox" ? "Inbox" : "Workout"}`, "ok");
+    setStatus(dest === "inbox" ? "Saved to Inbox for triage" : "Saved to Workout", "ok");
     flushQueue();
   } catch (e) {
     setQueue([...getQueue(), { dest, text, ts: Date.now() }]);
@@ -407,7 +574,9 @@ function showUnlock() {
 }
 $("pinUnlockBtn").onclick = async () => {
   try {
-    token = await unlockToken($("pinInput").value);
+    const keys = await unlockKeys($("pinInput").value);
+    token = keys.gh;
+    geminiKey = keys.gemini || null;
     $("pinInput").value = "";
     $("pinErr").textContent = "";
     $("pinOverlay").classList.add("hidden");
@@ -426,6 +595,7 @@ function showSettings() {
   $("setRepo").value = s.repo || "life-organizer";
   $("setBranch").value = s.branch || "main";
   $("setToken").value = "";
+  $("setGemini").value = "";
   $("setPin").value = "";
   $("setErr").textContent = "";
   $("settingsOverlay").classList.remove("hidden");
@@ -434,15 +604,27 @@ $("gearBtn").onclick = showSettings;
 $("setCancelBtn").onclick = () => $("settingsOverlay").classList.add("hidden");
 $("setSaveBtn").onclick = async () => {
   const owner = $("setOwner").value.trim(), repo = $("setRepo").value.trim(), branch = $("setBranch").value.trim() || "main";
-  const tok = $("setToken").value.trim(), pin = $("setPin").value;
+  const tok = $("setToken").value.trim(), gem = $("setGemini").value.trim(), pin = $("setPin").value;
   if (!owner || !repo) { $("setErr").textContent = "Owner and repository are required"; return; }
-  if (tok && pin.length < 4) { $("setErr").textContent = "PIN must be at least 4 characters"; return; }
-  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a token to finish setup"; return; }
+  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a GitHub token to finish setup"; return; }
+  if ((tok || gem) && pin.length < 4) { $("setErr").textContent = "Enter your PIN (4+ characters) to save keys"; return; }
   setSettings({ owner, repo, branch });
-  if (tok) { await storeToken(pin, tok); token = tok; }
+  if (tok || gem) {
+    // changing one key keeps the other; unlock first if it is not in memory
+    if (!token && localStorage.getItem(LS.vault)) {
+      try {
+        const old = await unlockKeys(pin);
+        token = old.gh;
+        geminiKey = old.gemini || null;
+      } catch { $("setErr").textContent = "Wrong PIN"; return; }
+    }
+    if (tok) token = tok;
+    if (gem) geminiKey = gem;
+    await storeKeys(pin, { gh: token, gemini: geminiKey });
+  }
   if (token) makeClient();
   $("settingsOverlay").classList.add("hidden");
-  setStatus("Settings saved", "ok");
+  setStatus(geminiKey ? "Settings saved, instant filing on" : "Settings saved", "ok");
   if (token) { flushQueue(); showTab("tasks"); }
 };
 

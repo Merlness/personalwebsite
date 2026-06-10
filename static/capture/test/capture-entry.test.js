@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed } from "../js/capture-entry.js";
+import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed, markProcessed } from "../js/capture-entry.js";
 
 const NOW = new Date(2026, 5, 10, 14, 30, 45); // 2026-06-10 14:30:45 local
 
@@ -73,6 +73,32 @@ test("parseUnprocessed reads entries under the Unprocessed heading only", () => 
   assert.equal(items.length, 2);
   assert.deepEqual(items[0], { id: "20260610-1", captured: "2026-06-10 14:30", source: "capture-pwa", raw: "call the landlord" });
   assert.equal(items[1].raw, "buy coffee");
+});
+
+const INBOX = `# Inbox
+
+## Unprocessed
+
+- [ ] id: 20260610-1 | Captured: 2026-06-10 14:30 | Source: capture-pwa | Raw: call the landlord
+- [ ] id: 20260610-2 | Captured: 2026-06-10 15:00 | Source: capture-pwa | Raw: buy coffee
+
+## Processed
+
+- [x] id: old-1 | Processed: 2026-06-03 | Result: Added to Business | Raw: done thing
+`;
+
+test("markProcessed moves an entry to Processed with the result", () => {
+  const out = markProcessed(INBOX, "20260610-1", "Promoted to Personal", "2026-06-11");
+  assert.ok(!parseUnprocessed(out).some((i) => i.id === "20260610-1"), "left Unprocessed");
+  const procLine = out.split("\n").find((l) => l.includes("20260610-1"));
+  assert.equal(procLine, "- [x] id: 20260610-1 | Processed: 2026-06-11 | Result: Promoted to Personal | Raw: call the landlord");
+  assert.ok(out.indexOf("## Processed") < out.indexOf(procLine), "lives under Processed");
+  assert.ok(out.includes("id: 20260610-2 | Captured"), "other entries untouched");
+  assert.ok(!/\n{3,}/.test(out));
+});
+
+test("markProcessed throws when the id is not in Unprocessed", () => {
+  assert.throws(() => markProcessed(INBOX, "ghost-id", "x", "2026-06-11"));
 });
 
 test("parseUnprocessed returns empty for a fresh inbox", () => {
