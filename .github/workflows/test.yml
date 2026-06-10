@@ -31,3 +31,11 @@ jobs:
 
     - name: Run Tests
       run: go test -v ./...
+
+    - name: Setup Node
+      uses: actions/setup-node@v5
+      with:
+        node-version: '22'
+
+    - name: Run Capture App Tests
+      run: npm test

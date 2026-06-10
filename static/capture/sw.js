@@ -1,5 +1,18 @@
-const CACHE = "capture-v2";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"];
+const CACHE = "capture-v3";
+const SHELL = [
+  "./",
+  "index.html",
+  "manifest.webmanifest",
+  "icon.svg",
+  "icon-192.png",
+  "icon-512.png",
+  "js/app.js",
+  "js/tasks-model.js",
+  "js/capture-entry.js",
+  "js/transcript.js",
+  "js/workout-view.js",
+  "js/github-api.js",
+];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

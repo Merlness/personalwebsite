@@ -1,7 +1,7 @@
 {
-  "name": "Capture",
-  "short_name": "Capture",
-  "description": "Voice capture to the Life Organizer inbox",
+  "name": "Organizer",
+  "short_name": "Organizer",
+  "description": "Life Organizer: tasks, workouts, and voice capture",
   "start_url": "/capture/",
   "scope": "/capture/",
   "display": "standalone",

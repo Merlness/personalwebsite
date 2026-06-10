@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0a0a0a">
-<title>Capture</title>
+<title>Organizer</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,6 +19,7 @@
     --accent: #c0c0c0;
     --danger: #e05c5c;
     --ok: #6fcf97;
+    --warn: #e0b35c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -28,116 +29,144 @@
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px);
     max-width: 560px;
     margin: 0 auto;
+    padding: env(safe-area-inset-top) 0 0;
   }
   header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 0 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px;
   }
-  header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-  #gearBtn { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; padding: 6px; }
-  .dest-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  header h1 { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  header .hbtns { display: flex; gap: 4px; }
+  header button { background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; padding: 6px; }
+  main { flex: 1; overflow-y: auto; padding: 0 16px 96px; }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  .pad { padding: 10px 4px; }
+  .status { text-align: center; font-size: 0.9rem; color: var(--muted); min-height: 1.3em; padding: 4px 16px; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--danger); }
+  .offline-note { color: var(--warn); font-size: 0.85rem; padding: 6px 4px; }
+
+  /* tasks */
+  .section-h { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); padding: 18px 2px 8px; }
+  .task-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; margin-bottom: 8px;
+    transition: opacity 0.25s;
+  }
+  .task-row.fading { opacity: 0.35; }
+  .task-row.review { flex-direction: column; gap: 4px; }
+  .checkbox {
+    width: 26px; height: 26px; flex-shrink: 0; margin-top: 2px;
+    border-radius: 8px; border: 2px solid var(--muted);
+    background: none; cursor: pointer;
+  }
+  .checkbox:active { background: var(--accent); }
+  .task-body { flex: 1; cursor: pointer; }
+  .task-text { font-size: 0.98rem; line-height: 1.45; }
+  .task-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+  .chip { font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
+  .chip.high { color: #ff9d9d; border-color: #5c2a2a; background: #2a1515; }
+  .chip.medium { color: var(--warn); border-color: #4d3d1f; background: #251d0e; }
+  .due { font-size: 0.78rem; color: var(--muted); }
+  .due.overdue { color: var(--danger); }
+  #fab {
+    position: fixed; right: 18px; bottom: 86px; z-index: 5;
+    width: 58px; height: 58px; border-radius: 50%;
+    border: none; background: var(--accent); color: #111;
+    font-size: 1.9rem; line-height: 1; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+
+  /* workout */
+  .card-body {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; white-space: pre-wrap; font-size: 0.92rem; line-height: 1.55;
+  }
+  .week-row {
+    display: flex; gap: 10px; align-items: center;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-size: 0.92rem;
+  }
+  .week-date { color: var(--muted); width: 84px; flex-shrink: 0; }
+  .week-name { flex: 1; }
+  .badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.done { color: var(--ok); border-color: #1f4d33; }
+  .badge.planned { color: var(--accent); }
+  .week-row.done .week-name { color: var(--muted); text-decoration: line-through; }
+
+  /* capture */
+  .dest-toggle { display: flex; gap: 8px; margin: 8px 0 14px; }
   .dest-toggle button {
-    flex: 1;
-    padding: 12px 0;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--muted);
-    font-size: 0.95rem;
-    cursor: pointer;
+    flex: 1; padding: 12px 0; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--muted); font-size: 0.95rem; cursor: pointer;
   }
   .dest-toggle button.active { border-color: var(--accent); color: var(--text); background: #1f1f1f; }
   #note {
-    width: 100%;
-    flex: 1;
-    min-height: 160px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text);
-    font-size: 1.05rem;
-    line-height: 1.5;
-    padding: 14px;
-    resize: none;
+    width: 100%; min-height: 200px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    color: var(--text); font-size: 1.05rem; line-height: 1.5; padding: 14px; resize: none;
   }
   #note:focus { outline: none; border-color: var(--accent); }
   #interim { color: var(--muted); font-size: 0.95rem; min-height: 1.4em; padding: 6px 4px; font-style: italic; }
   .controls { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
   #micBtn {
-    width: 76px; height: 76px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    font-size: 1.9rem;
-    cursor: pointer;
-    flex-shrink: 0;
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--panel);
+    color: var(--text); font-size: 1.8rem; cursor: pointer; flex-shrink: 0;
     transition: border-color 0.2s, background 0.2s;
   }
   #micBtn.listening { border-color: var(--danger); background: #2a1515; animation: pulse 1.4s infinite; }
   @keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(224,92,92,0.12); } }
   #saveBtn {
-    flex: 1;
-    padding: 22px 0;
-    border-radius: 14px;
-    border: none;
-    background: var(--accent);
-    color: #111;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
+    flex: 1; padding: 20px 0; border-radius: 14px; border: none;
+    background: var(--accent); color: #111; font-size: 1.05rem; font-weight: 700; cursor: pointer;
   }
   #saveBtn:disabled { opacity: 0.4; }
-  #status { margin-top: 12px; font-size: 0.9rem; color: var(--muted); min-height: 1.3em; text-align: center; }
-  #status.ok { color: var(--ok); }
-  #status.err { color: var(--danger); }
-  #pending { font-size: 0.85rem; color: var(--danger); text-align: center; margin-top: 4px; min-height: 1.2em; }
+  #pending { font-size: 0.85rem; color: var(--danger); text-align: center; margin-top: 6px; min-height: 1.2em; }
   #pending button { background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
 
+  /* bottom nav */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 4;
+    display: flex; justify-content: center;
+    background: rgba(10,10,10,0.92); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+    padding: 6px 0 calc(env(safe-area-inset-bottom) + 6px);
+  }
+  nav .inner { display: flex; width: 100%; max-width: 560px; }
+  nav button {
+    flex: 1; background: none; border: none; color: var(--muted);
+    font-size: 0.8rem; padding: 8px 0 4px; cursor: pointer;
+  }
+  nav button .ico { display: block; font-size: 1.3rem; margin-bottom: 2px; }
+  nav button.active { color: var(--text); }
+
+  /* overlays */
   .overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-    z-index: 10;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;
   }
-  .overlay.hidden { display: none; }
   .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px;
-    width: 100%;
-    max-width: 420px;
-    max-height: 85dvh;
-    overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px; width: 100%; max-width: 420px; max-height: 85dvh; overflow-y: auto;
   }
-  .card h2 { font-size: 1rem; margin-bottom: 14px; color: var(--accent); letter-spacing: 0.05em; }
+  .card h2 { font-size: 1rem; margin-bottom: 6px; color: var(--accent); letter-spacing: 0.05em; }
   .card label { display: block; font-size: 0.8rem; color: var(--muted); margin: 12px 0 4px; }
-  .card input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: #0f0f0f;
-    color: var(--text);
-    font-size: 1rem;
+  .card input, .card select, .card textarea {
+    width: 100%; padding: 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: #0f0f0f; color: var(--text); font-size: 1rem;
   }
+  .card textarea { min-height: 84px; resize: vertical; }
   .card .row { display: flex; gap: 10px; margin-top: 18px; }
   .card .row button {
-    flex: 1;
-    padding: 13px 0;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    font-size: 0.95rem;
-    cursor: pointer;
+    flex: 1; padding: 13px 0; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    font-size: 0.95rem; cursor: pointer;
   }
   .card .row button.primary { background: var(--accent); color: #111; border: none; font-weight: 700; }
   .card p.hint { font-size: 0.78rem; color: var(--muted); margin-top: 8px; line-height: 1.45; }
@@ -147,24 +176,48 @@
 <body>
 
 <header>
-  <h1>Capture</h1>
-  <button id="gearBtn" aria-label="Settings">&#9881;</button>
+  <h1>Organizer</h1>
+  <div class="hbtns">
+    <button id="refreshBtn" aria-label="Refresh">&#8635;</button>
+    <button id="gearBtn" aria-label="Settings">&#9881;</button>
+  </div>
 </header>
+<div id="status" class="status"></div>
 
-<div class="dest-toggle">
-  <button id="destInbox" class="active">Inbox</button>
-  <button id="destWorkout">Workout</button>
-</div>
+<main>
+  <section id="tab-tasks">
+    <div id="taskList"></div>
+  </section>
 
-<textarea id="note" placeholder="Tap the mic and talk, or type here."></textarea>
-<div id="interim"></div>
+  <section id="tab-workout" class="hidden">
+    <div id="workoutCard"></div>
+    <div id="weekList"></div>
+  </section>
 
-<div class="controls">
-  <button id="micBtn" aria-label="Dictate">&#127908;</button>
-  <button id="saveBtn">Save</button>
-</div>
-<div id="status"></div>
-<div id="pending"></div>
+  <section id="tab-capture" class="hidden">
+    <div class="dest-toggle">
+      <button id="destInbox" class="active">Inbox</button>
+      <button id="destWorkout">Workout</button>
+    </div>
+    <textarea id="note" placeholder="Tap the mic and talk, or type here."></textarea>
+    <div id="interim"></div>
+    <div class="controls">
+      <button id="micBtn" aria-label="Dictate">&#127908;</button>
+      <button id="saveBtn">Save</button>
+    </div>
+    <div id="pending"></div>
+  </section>
+</main>
+
+<button id="fab" aria-label="Add task">+</button>
+
+<nav>
+  <div class="inner">
+    <button id="nav-tasks" class="active"><span class="ico">&#9745;</span>Tasks</button>
+    <button id="nav-workout"><span class="ico">&#128170;</span>Workout</button>
+    <button id="nav-capture"><span class="ico">&#127908;</span>Capture</button>
+  </div>
+</nav>
 
 <!-- PIN unlock -->
 <div id="pinOverlay" class="overlay hidden">
@@ -203,297 +256,35 @@
   </div>
 </div>
 
-<script>
-"use strict";
+<!-- Task add/edit -->
+<div id="taskSheet" class="overlay hidden">
+  <div class="card">
+    <h2 id="sheetTitle">New task</h2>
+    <label for="tText">Task</label>
+    <textarea id="tText"></textarea>
+    <label for="tSection">Bucket</label>
+    <select id="tSection">
+      <option>Business</option>
+      <option>Personal</option>
+      <option>Financial</option>
+    </select>
+    <label for="tPriority">Priority</label>
+    <select id="tPriority">
+      <option>High</option>
+      <option>Medium</option>
+      <option>Low</option>
+    </select>
+    <label for="tDue">Due date (optional)</label>
+    <input id="tDue" type="date">
+    <div class="err" id="sheetErr"></div>
+    <div class="row">
+      <button id="tCancel">Cancel</button>
+      <button class="primary" id="tSave">Save</button>
+    </div>
+    <p class="hint">Priority auto-escalates from the due date (3 days = High, 7 days = Medium). A manual raise wins.</p>
+  </div>
+</div>
 
-const FILES = {
-  inbox: { path: "inbox.md", label: "Inbox" },
-  workout: { path: "pulse/workout-capture.md", label: "Workout" },
-};
-
-const LS = {
-  settings: "capture.settings",
-  vault: "capture.vault",
-  queue: "capture.queue",
-};
-
-let token = null; // decrypted token, memory only
-let dest = "inbox";
-let listening = false;
-
-const $ = (id) => document.getElementById(id);
-const note = $("note"), statusEl = $("status"), pendingEl = $("pending");
-
-// ---------- settings ----------
-function getSettings() {
-  try { return JSON.parse(localStorage.getItem(LS.settings)) || {}; } catch { return {}; }
-}
-function setSettings(s) { localStorage.setItem(LS.settings, JSON.stringify(s)); }
-
-// ---------- crypto: PIN-encrypted token (PBKDF2 + AES-GCM) ----------
-const enc = new TextEncoder(), dec = new TextDecoder();
-const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
-const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-
-async function deriveKey(pin, salt) {
-  const base = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" },
-    base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-  );
-}
-async function storeToken(pin, tok) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await deriveKey(pin, salt);
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(tok));
-  localStorage.setItem(LS.vault, JSON.stringify({ salt: b64(salt), iv: b64(iv), ct: b64(ct) }));
-}
-async function unlockToken(pin) {
-  const v = JSON.parse(localStorage.getItem(LS.vault));
-  const key = await deriveKey(pin, unb64(v.salt));
-  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(v.iv) }, key, unb64(v.ct));
-  return dec.decode(pt);
-}
-
-// ---------- github ----------
-function utf8ToB64(s) { return btoa(String.fromCharCode(...enc.encode(s))); }
-function b64ToUtf8(s) { return dec.decode(unb64(s.replace(/\n/g, ""))); }
-
-async function gh(path, opts = {}) {
-  const res = await fetch("https://api.github.com" + path, {
-    ...opts,
-    headers: {
-      "Authorization": "Bearer " + token,
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(opts.headers || {}),
-    },
-  });
-  return res;
-}
-
-function buildEntry(text) {
-  const now = new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  const date = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
-  const time = `${p(now.getHours())}:${p(now.getMinutes())}`;
-  const stamp = `${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`;
-  const slug = text.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().split(/\s+/).slice(0, 3).join("-") || "note";
-  const raw = text.replace(/\s*\n\s*/g, " ").trim();
-  return `- [ ] id: ${stamp}-${slug} | Captured: ${date} ${time} | Source: capture-pwa | Raw: ${raw}`;
-}
-
-function insertUnderUnprocessed(content, entry) {
-  const lines = content.split("\n");
-  const i = lines.findIndex((l) => l.trim().toLowerCase() === "## unprocessed");
-  if (i === -1) return content.trimEnd() + "\n\n## Unprocessed\n\n" + entry + "\n";
-  lines.splice(i + 1, 0, "", entry);
-  // collapse the doubled blank line this can create
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n");
-}
-
-async function appendToRepo(destKey, text) {
-  const { owner, repo, branch } = getSettings();
-  const path = FILES[destKey].path;
-  const url = `/repos/${owner}/${repo}/contents/${path}`;
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const getRes = await gh(`${url}?ref=${encodeURIComponent(branch)}`);
-    if (!getRes.ok) throw new Error(`read failed (${getRes.status})`);
-    const file = await getRes.json();
-    const updated = insertUnderUnprocessed(b64ToUtf8(file.content), buildEntry(text));
-    const putRes = await gh(url, {
-      method: "PUT",
-      body: JSON.stringify({
-        message: `capture: ${FILES[destKey].label.toLowerCase()} note from phone`,
-        content: utf8ToB64(updated),
-        sha: file.sha,
-        branch,
-      }),
-    });
-    if (putRes.ok) return;
-    if (putRes.status !== 409 && putRes.status !== 422) throw new Error(`write failed (${putRes.status})`);
-    // sha conflict: refetch and retry once
-  }
-  throw new Error("write conflict, try again");
-}
-
-// ---------- offline queue ----------
-function getQueue() {
-  try { return JSON.parse(localStorage.getItem(LS.queue)) || []; } catch { return []; }
-}
-function setQueue(q) {
-  localStorage.setItem(LS.queue, JSON.stringify(q));
-  pendingEl.innerHTML = q.length
-    ? `${q.length} unsent capture${q.length > 1 ? "s" : ""} <button id="retryBtn">retry</button>`
-    : "";
-  const r = $("retryBtn");
-  if (r) r.onclick = flushQueue;
-}
-async function flushQueue() {
-  if (!token) return;
-  let q = getQueue();
-  while (q.length) {
-    try {
-      await appendToRepo(q[0].dest, q[0].text);
-      q.shift();
-      setQueue(q);
-    } catch { break; }
-  }
-}
-
-// ---------- status ----------
-let statusTimer;
-function setStatus(msg, cls = "") {
-  clearTimeout(statusTimer);
-  statusEl.textContent = msg;
-  statusEl.className = cls;
-  if (msg) statusTimer = setTimeout(() => { statusEl.textContent = ""; statusEl.className = ""; }, 4000);
-}
-
-// ---------- save ----------
-$("saveBtn").onclick = async () => {
-  const text = note.value.trim();
-  if (!text) return;
-  if (!token) { showUnlock(); return; }
-  stopMic();
-  $("saveBtn").disabled = true;
-  setStatus("Saving...");
-  try {
-    await appendToRepo(dest, text);
-    note.value = "";
-    setStatus(`Saved to ${FILES[dest].label}`, "ok");
-    flushQueue();
-  } catch (e) {
-    setQueue([...getQueue(), { dest, text, ts: Date.now() }]);
-    note.value = "";
-    setStatus(`Offline or error (${e.message}). Queued on this phone.`, "err");
-  } finally {
-    $("saveBtn").disabled = false;
-  }
-};
-
-// ---------- destination toggle ----------
-function setDest(d) {
-  dest = d;
-  $("destInbox").classList.toggle("active", d === "inbox");
-  $("destWorkout").classList.toggle("active", d === "workout");
-}
-$("destInbox").onclick = () => setDest("inbox");
-$("destWorkout").onclick = () => setDest("workout");
-
-// ---------- speech ----------
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null;
-let dictBase = ""; // textarea content when this recognition session started
-
-// Android Chrome reports cumulative finals (each contains the whole
-// transcript so far); desktop reports distinct segments. Detect which
-// by checking if a new final extends the accumulated text.
-function assembleFinals(results) {
-  let finals = "";
-  for (let i = 0; i < results.length; i++) {
-    if (!results[i].isFinal) continue;
-    const t = results[i][0].transcript.trim();
-    if (!t) continue;
-    if (t.toLowerCase().startsWith(finals.toLowerCase())) finals = t;
-    else if (finals.toLowerCase().endsWith(t.toLowerCase())) continue;
-    else finals += (finals ? " " : "") + t;
-  }
-  return finals;
-}
-
-function startMic() {
-  if (!SR) { setStatus("Speech recognition not supported in this browser", "err"); return; }
-  dictBase = note.value.trim();
-  rec = new SR();
-  rec.lang = "en-US";
-  rec.continuous = true;
-  rec.interimResults = true;
-  rec.onresult = (ev) => {
-    let interim = "";
-    for (let i = 0; i < ev.results.length; i++) {
-      if (!ev.results[i].isFinal) interim += ev.results[i][0].transcript;
-    }
-    note.value = (dictBase + " " + assembleFinals(ev.results)).trim();
-    $("interim").textContent = interim;
-  };
-  rec.onend = () => {
-    if (listening) {
-      dictBase = note.value.trim(); // results reset on restart, fold them in
-      try { rec.start(); } catch {}
-    }
-  };
-  rec.onerror = (e) => {
-    if (e.error === "not-allowed") { setStatus("Microphone permission denied", "err"); stopMic(); }
-  };
-  rec.start();
-  listening = true;
-  $("micBtn").classList.add("listening");
-}
-function stopMic() {
-  listening = false;
-  $("micBtn").classList.remove("listening");
-  $("interim").textContent = "";
-  if (rec) try { rec.stop(); } catch {}
-}
-$("micBtn").onclick = () => (listening ? stopMic() : startMic());
-
-// ---------- PIN unlock ----------
-function showUnlock() {
-  if (!localStorage.getItem(LS.vault)) { showSettings(); return; }
-  $("pinOverlay").classList.remove("hidden");
-  $("pinInput").focus();
-}
-$("pinUnlockBtn").onclick = async () => {
-  try {
-    token = await unlockToken($("pinInput").value);
-    $("pinInput").value = "";
-    $("pinErr").textContent = "";
-    $("pinOverlay").classList.add("hidden");
-    flushQueue();
-  } catch {
-    $("pinErr").textContent = "Wrong PIN";
-  }
-};
-$("pinInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pinUnlockBtn").click(); });
-
-// ---------- settings UI ----------
-function showSettings() {
-  const s = getSettings();
-  $("setOwner").value = s.owner || "Merlness";
-  $("setRepo").value = s.repo || "life-organizer";
-  $("setBranch").value = s.branch || "main";
-  $("setToken").value = "";
-  $("setPin").value = "";
-  $("setErr").textContent = "";
-  $("settingsOverlay").classList.remove("hidden");
-}
-$("gearBtn").onclick = showSettings;
-$("setCancelBtn").onclick = () => $("settingsOverlay").classList.add("hidden");
-$("setSaveBtn").onclick = async () => {
-  const owner = $("setOwner").value.trim(), repo = $("setRepo").value.trim(), branch = $("setBranch").value.trim() || "main";
-  const tok = $("setToken").value.trim(), pin = $("setPin").value;
-  if (!owner || !repo) { $("setErr").textContent = "Owner and repository are required"; return; }
-  if (tok && pin.length < 4) { $("setErr").textContent = "PIN must be at least 4 characters"; return; }
-  if (tok && !pin) { $("setErr").textContent = "Set a PIN to encrypt the token"; return; }
-  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a token to finish setup"; return; }
-  setSettings({ owner, repo, branch });
-  if (tok) {
-    await storeToken(pin, tok);
-    token = tok;
-  }
-  $("settingsOverlay").classList.add("hidden");
-  setStatus("Settings saved", "ok");
-  flushQueue();
-};
-
-// ---------- init ----------
-setQueue(getQueue());
-window.addEventListener("online", flushQueue);
-if (localStorage.getItem(LS.vault)) showUnlock(); else showSettings();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
