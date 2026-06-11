@@ -121,11 +121,15 @@ export function completeTask(md, line, today) {
   const archive = findSection(model, "Archive");
   const parsed = parseTasks(`## X\n${line}`).sections[0].tasks[0];
   const doneLine = taskToLine({ ...parsed, done: true, doneDate: today });
-  // append after the last archived task, or after the italic note
-  let at = -1;
+  // append after the last archived task, or after the italic note; lines
+  // inside HTML comments (the format example) must never anchor insertion
+  let at = -1, inComment = false;
   for (let i = 0; i < archive.lines.length; i++) {
-    if (TASK_RE.test(archive.lines[i])) at = i;
-    else if (at === -1 && archive.lines[i].trim().startsWith("_")) at = i;
+    const line = archive.lines[i];
+    if (line.trimStart().startsWith("<!--")) inComment = true;
+    if (inComment) { if (line.includes("-->")) inComment = false; continue; }
+    if (TASK_RE.test(line)) at = i;
+    else if (at === -1 && line.trim().startsWith("_")) at = i;
   }
   archive.lines.splice(at + 1, 0, "", doneLine);
   const out = serializeTasks(model).replace(/\n{3,}/g, "\n\n");

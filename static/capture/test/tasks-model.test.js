@@ -195,6 +195,28 @@ test("updateTask can move a task to another section", () => {
   assert.equal(model.sections[1].tasks.length, 2);
 });
 
+test("completeTask never inserts inside the Archive comment block", () => {
+  // mirrors the real tasks.md: the comment holds a REAL-looking example line
+  const md = `## Personal
+
+- [ ] High | Due: 2026-05-12 | Fruit basket for friend | Added: 2026-05-11 | Source: Keep
+
+## Archive
+
+_Completed tasks live here. Never deleted._
+
+<!--
+Example:
+- [ ] High | Due: 2026-05-13 | Follow up with client on proposal | Added: 2026-05-11 | Source: Keep
+-->
+`;
+  const target = parseTasks(md).sections[0].tasks[0];
+  const out = completeTask(md, target.line, "2026-06-10");
+  const doneIdx = out.indexOf("- [x] High | Due: 2026-05-12 | Fruit basket");
+  assert.ok(doneIdx !== -1 && doneIdx < out.indexOf("<!--"), "archived line lands before the comment block");
+  assert.equal(parseTasks(out).sections.find((s) => s.name === "Archive").tasks.length, 1, "visible to the parser");
+});
+
 test("deleteTask removes the line entirely and stays parseable", () => {
   const target = parseTasks(SAMPLE).sections[0].tasks[0];
   const out = deleteTask(SAMPLE, target.line);
