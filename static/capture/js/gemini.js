@@ -3,7 +3,23 @@
 // anything ambiguous - left for the scheduled Claude run). Any failure or
 // doubt falls back to inbox: captures must never be lost or misfiled.
 
-const MODEL = "gemini-2.0-flash";
+// gemini-2.0-flash was shut down 2026-06-01. Use the auto-tracking alias
+// first so Google's next retirement does not break us; pin a fallback.
+const MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
+
+// POST the same body to each model until one answers; null if all fail
+async function callGemini(body, apiKey, fetchFn) {
+  for (const model of MODELS) {
+    try {
+      const res = await fetchFn.bind(globalThis)(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+      );
+      if (res.ok) return res.json();
+    } catch {}
+  }
+  return null;
+}
 const SECTIONS = ["Business", "Personal", "Financial"];
 const PRIORITIES = ["High", "Medium", "Low"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,20 +42,15 @@ Rules:
 export async function classifyCapture(text, { apiKey, today, fetchFn = globalThis.fetch } = {}) {
   const fallback = { action: "inbox", reason: "unclassified" };
   try {
-    const fetchBound = fetchFn.bind(globalThis);
-    const res = await fetchBound(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${RULES}\n\nToday is ${today}.\n\nCapture: ${text}` }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0 },
-        }),
-      }
-    );
-    if (!res.ok) return fallback;
-    const body = await res.json();
+    const body = await callGemini({
+      contents: [{ parts: [{ text: `${RULES}
+
+Today is ${today}.
+
+Capture: ${text}` }] }],
+      generationConfig: { responseMimeType: "application/json", temperature: 0 },
+    }, apiKey, fetchFn);
+    if (!body) return fallback;
     const raw = body?.candidates?.[0]?.content?.parts?.[0]?.text;
     const parsed = JSON.parse(raw);
     if (parsed.action === "inbox") return { action: "inbox", reason: String(parsed.reason || "unclear") };
@@ -70,13 +81,11 @@ ${references}
 His rough note: ${note}
 
 Respond with ONLY the post text, no preamble.`;
-    const res = await fetchFn.bind(globalThis)(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } }) }
-    );
-    if (!res.ok) return null;
-    const body = await res.json();
+    const body = await callGemini({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7 },
+    }, apiKey, fetchFn);
+    if (!body) return null;
     const text = (body?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
     return text || null;
   } catch { return null; }

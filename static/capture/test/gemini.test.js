@@ -79,3 +79,26 @@ test("draftLinkedInPost returns null on API error or empty text", async () => {
   assert.equal(await draftLinkedInPost("x", "", { apiKey: "k", fetchFn: geminiFetch("   ") }), null);
   assert.equal(await draftLinkedInPost("x", "", { apiKey: "k", fetchFn: async () => { throw new Error("net"); } }), null);
 });
+
+test("falls back through the model chain when a model is retired", async () => {
+  const calls = [];
+  const seq = [
+    { status: 404, text: "{}" },
+    { status: 200, text: JSON.stringify({ action: "task", section: "Personal", priority: "Low", due: null, text: "Call mom" }) },
+  ];
+  const fetch = async (url) => {
+    calls.push(String(url));
+    const h = seq.shift();
+    return { ok: h.status === 200, status: h.status, json: async () => ({ candidates: [{ content: { parts: [{ text: h.text }] } }] }) };
+  };
+  const r = await classifyCapture("call mom", { ...OPTS, fetchFn: fetch });
+  assert.equal(r.action, "task");
+  assert.ok(calls[0].includes("gemini-flash-latest"), "tries the auto-tracking alias first");
+  assert.ok(calls[1].includes("gemini-2.5-flash"), "falls back to the pinned model");
+});
+
+test("returns inbox fallback when every model in the chain fails", async () => {
+  const fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
+  const r = await classifyCapture("anything", { ...OPTS, fetchFn: fetch });
+  assert.equal(r.action, "inbox");
+});

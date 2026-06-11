@@ -192,7 +192,7 @@ $("liSave").onclick = async () => {
         setStatus("Rough draft ready below", "ok");
         loadDrafts();
       } else {
-        setStatus("Sent. Instant draft failed; the evening run will write it.", "ok");
+        setStatus("Gemini unavailable. Idea saved; the 9pm run writes the draft.", "err");
       }
     } else {
       setStatus("Sent to drafting. The evening run writes the post.", "ok");
@@ -639,8 +639,10 @@ $("saveBtn").onclick = async () => {
   setStatus("Saving…");
   try {
     // with a Gemini key, clear inbox captures file themselves as tasks
+    let geminiDown = false;
     if (dest === "inbox" && geminiKey) {
       const c = await classifyCapture(text, { apiKey: geminiKey, today: todayISO() });
+      geminiDown = c.action === "inbox" && c.reason === "unclassified";
       if (c.action === "task") {
         const written = await gh.mutateFile(FILES.tasks,
           (x) => addTask(x, { section: c.section, priority: c.priority, due: c.due, text: c.text, added: todayISO(), source: "capture-pwa (auto)" }),
@@ -654,7 +656,10 @@ $("saveBtn").onclick = async () => {
     }
     await saveCapture(dest, text);
     $("note").value = "";
-    setStatus(dest === "inbox" ? "Saved to Inbox for triage" : "Saved to Workout", "ok");
+    setStatus(
+      geminiDown ? "Gemini unavailable. Saved to Inbox; the triage run will file it."
+        : dest === "inbox" ? "Saved to Inbox for triage" : "Saved to Workout",
+      geminiDown ? "err" : "ok");
     flushQueue();
   } catch (e) {
     setQueue([...getQueue(), { dest, text, ts: Date.now() }]);
