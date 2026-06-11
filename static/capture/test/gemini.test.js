@@ -62,3 +62,20 @@ test("empty task text falls back to inbox", async () => {
   const r = await classifyCapture("a", { ...OPTS, fetchFn: geminiFetch(JSON.stringify({ action: "task", section: "Personal", priority: "Low", due: null, text: "  " })) });
   assert.equal(r.action, "inbox");
 });
+
+import { draftLinkedInPost } from "../js/gemini.js";
+
+test("draftLinkedInPost returns the drafted text and feeds references into the prompt", async () => {
+  const fetch = geminiFetch("First time pitching.\n\nGreat night at the event.");
+  const text = await draftLinkedInPost("won money at SBA pitch", "REF POSTS HERE", { apiKey: "k", fetchFn: fetch });
+  assert.equal(text, "First time pitching.\n\nGreat night at the event.");
+  const req = JSON.stringify(JSON.parse(fetch.calls[0].opts.body));
+  assert.ok(req.includes("REF POSTS HERE") && req.includes("won money at SBA pitch"));
+  assert.ok(req.toLowerCase().includes("em dash"), "voice rules included");
+});
+
+test("draftLinkedInPost returns null on API error or empty text", async () => {
+  assert.equal(await draftLinkedInPost("x", "", { apiKey: "k", fetchFn: geminiFetch("", 429) }), null);
+  assert.equal(await draftLinkedInPost("x", "", { apiKey: "k", fetchFn: geminiFetch("   ") }), null);
+  assert.equal(await draftLinkedInPost("x", "", { apiKey: "k", fetchFn: async () => { throw new Error("net"); } }), null);
+});

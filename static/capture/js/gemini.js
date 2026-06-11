@@ -55,3 +55,29 @@ export async function classifyCapture(text, { apiKey, today, fetchFn = globalThi
     return fallback;
   }
 }
+
+// Instant rough draft of a LinkedIn post. The scheduled Claude run writes
+// the polished version later; this gives Merl something to post tonight.
+export async function draftLinkedInPost(note, references, { apiKey, fetchFn = globalThis.fetch } = {}) {
+  try {
+    const prompt = `Draft a LinkedIn post for Merl Martin (CEO, Bennu Systems, Phoenix AZ) from his rough voice note.
+
+Voice rules: natural, confident, friendly, slightly casual. NEVER use an em dash. No corporate marketing speak, no engagement bait, no "I'm humbled". Strong hook as the first line. Short paragraphs. 120-220 words. End with 4-6 relevant hashtags. Mention Bennu naturally only if it fits. Match the energy of his blog (merlmartin.com/blog) more than typical LinkedIn tone.
+
+Format reference (structure only, not tone):
+${references}
+
+His rough note: ${note}
+
+Respond with ONLY the post text, no preamble.`;
+    const res = await fetchFn.bind(globalThis)(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } }) }
+    );
+    if (!res.ok) return null;
+    const body = await res.json();
+    const text = (body?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+    return text || null;
+  } catch { return null; }
+}

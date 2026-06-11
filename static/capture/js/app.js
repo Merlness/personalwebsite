@@ -5,7 +5,7 @@ import { parseTasks, addTask, completeTask, updateTask, deleteTask, effectivePri
 import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnprocessed, markProcessed } from "./capture-entry.js";
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
-import { classifyCapture } from "./gemini.js";
+import { classifyCapture, draftLinkedInPost } from "./gemini.js";
 import { GitHubClient } from "./github-api.js";
 
 const FILES = {
@@ -128,14 +128,23 @@ for (const t of TABS) $(`nav-${t}`).onclick = () => showTab(t);
 // ---------- linkedin tab ----------
 let liFiles = [];
 $("liPhotos").onchange = () => {
-  liFiles = [...$("liPhotos").files];
+  liFiles = [...liFiles, ...$("liPhotos").files];
+  $("liPhotos").value = "";
+  renderThumbs();
+};
+function renderThumbs() {
   $("liThumbs").innerHTML = "";
-  for (const f of liFiles) {
+  liFiles.forEach((f, i) => {
+    const wrap = el("div", "thumb-wrap");
     const img = document.createElement("img");
     img.src = URL.createObjectURL(f);
-    $("liThumbs").appendChild(img);
-  }
-};
+    wrap.appendChild(img);
+    const x = el("button", "thumb-x", "✕");
+    x.onclick = () => { liFiles.splice(i, 1); renderThumbs(); };
+    wrap.appendChild(x);
+    $("liThumbs").appendChild(wrap);
+  });
+}
 
 // compress to <=1600px JPEG and return raw base64 (no data: prefix)
 function compressPhoto(file) {
@@ -171,7 +180,23 @@ $("liSave").onclick = async () => {
       await gh.createFile(`${dir}/photo-${i + 1}.jpg`, await compressPhoto(liFiles[i]), `linkedin: photo ${i + 1} for ${stamp}`);
     }
     $("liNote").value = ""; liFiles = []; $("liThumbs").innerHTML = ""; $("liPhotos").value = "";
-    setStatus("Sent to drafting. The evening run writes the post.", "ok");
+    if (geminiKey) {
+      setStatus("Drafting now…");
+      let refs = "";
+      try { refs = (await readFile("drafts/linkedin/reference-posts.md")).content; } catch {}
+      const draft = await draftLinkedInPost(noteText, refs, { apiKey: geminiKey });
+      if (draft) {
+        await gh.createFile(`drafts/linkedin/ready/post-${stamp}.md`,
+          utf8b64(`Rough draft (instant). The evening run refines it if still here.\n\n---\n\n${draft}\n`),
+          `linkedin: instant rough draft ${stamp}`);
+        setStatus("Rough draft ready below", "ok");
+        loadDrafts();
+      } else {
+        setStatus("Sent. Instant draft failed; the evening run will write it.", "ok");
+      }
+    } else {
+      setStatus("Sent to drafting. The evening run writes the post.", "ok");
+    }
   } catch (e) {
     setStatus(e.message, "err");
   } finally {
