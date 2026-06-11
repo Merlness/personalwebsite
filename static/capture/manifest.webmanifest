@@ -1,15 +1,14 @@
 {
-  "name": "Organizer",
-  "short_name": "Organizer",
-  "description": "Life Organizer: tasks, workouts, and voice capture",
+  "name": "Merl's Organizer",
+  "short_name": "Merl's Org",
+  "description": "Merl's Life Organizer: tasks, workouts, posts, and voice capture",
   "start_url": "/capture/",
   "scope": "/capture/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
