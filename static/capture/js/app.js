@@ -6,6 +6,7 @@ import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnp
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
 import { classifyCapture, draftLinkedInPost } from "./gemini.js";
+import { makeCardId, isoLocal, buildCardNote } from "./cards-model.js";
 import { GitHubClient } from "./github-api.js";
 
 const FILES = {
@@ -16,6 +17,7 @@ const FILES = {
   ledger: "pulse/workout-ledger.md",
   program: "pulse/workout-program.md",
 };
+const CARDS_DIR = "drafts/cards/inbox";
 const LS = { settings: "capture.settings", vault: "capture.vault", queue: "capture.queue", cache: "capture.filecache" };
 const SECTIONS = ["Business", "Personal", "Financial"];
 
@@ -112,7 +114,7 @@ function setStatus(msg, cls = "") {
 }
 
 // ---------- tabs ----------
-const TABS = ["tasks", "workout", "linkedin", "capture"];
+const TABS = ["tasks", "workout", "linkedin", "cards", "capture"];
 function showTab(name) {
   for (const t of TABS) {
     $(`tab-${t}`).classList.toggle("hidden", t !== name);
@@ -244,6 +246,61 @@ async function loadDrafts() {
     root.appendChild(el("div", "muted pad", `Could not load drafts (${e.message})`));
   }
 }
+
+// ---------- cards tab ----------
+let cardFiles = [];
+$("cardPhotos").onchange = () => {
+  cardFiles = [...cardFiles, ...$("cardPhotos").files];
+  $("cardPhotos").value = "";
+  renderCardThumbs();
+};
+function renderCardThumbs() {
+  $("cardThumbs").innerHTML = "";
+  cardFiles.forEach((f, i) => {
+    const wrap = el("div", "thumb-wrap");
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(f);
+    wrap.appendChild(img);
+    const x = el("button", "thumb-x", "✕");
+    x.onclick = () => { cardFiles.splice(i, 1); renderCardThumbs(); };
+    wrap.appendChild(x);
+    $("cardThumbs").appendChild(wrap);
+  });
+}
+
+$("cardSave").onclick = async () => {
+  const noteText = $("cardNote").value.trim();
+  if (!noteText && !cardFiles.length) { setStatus("Add card photos or a note first", "err"); return; }
+  $("cardSave").disabled = true;
+  try {
+    const now = new Date();
+    const id = makeCardId(now);
+    const dir = `${CARDS_DIR}/${id}`;
+    // photos go up first; note.md lands last as the completion marker, so the
+    // processing run never acts on a folder until it is whole
+    for (let i = 0; i < cardFiles.length; i++) {
+      setStatus(`Uploading card ${i + 1}/${cardFiles.length}…`);
+      await gh.createFile(`${dir}/photo-${i + 1}.jpg`, await compressPhoto(cardFiles[i]), `cards: photo ${i + 1} for ${id}`);
+    }
+    setStatus("Saving…");
+    const noteMd = buildCardNote({ id, capturedAt: isoLocal(now), noteText, photoCount: cardFiles.length });
+    await gh.createFile(`${dir}/note.md`, utf8b64(noteMd), `cards: capture ${id}`);
+    // a future instant-extraction step slots in here: write extracted.json
+    // into the same folder and flip status (see CARDS_FEATURE_PLAN.md)
+    $("cardNote").value = ""; cardFiles = []; renderCardThumbs(); $("cardPhotos").value = "";
+    setStatus("Saved. The processing run files the contacts.", "ok");
+  } catch (e) {
+    if (cardFiles.length) {
+      setStatus(`Upload failed (${e.message}). Photos stay attached; retry when you're back online.`, "err");
+    } else {
+      setQueue([...getQueue(), { dest: "cards", text: noteText, ts: Date.now() }]);
+      $("cardNote").value = "";
+      setStatus(`Offline or error (${e.message}). Queued on this phone.`, "err");
+    }
+  } finally {
+    $("cardSave").disabled = false;
+  }
+};
 
 // ---------- tasks tab ----------
 const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
@@ -609,10 +666,28 @@ async function saveCapture(destKey, text) {
   noteWritten(path, written);
   if (destKey === "inbox") inboxItems = parseUnprocessed(written);
 }
+// Queued note-only cards each become their own folder, sent one at a time.
+async function flushCardsQueue() {
+  for (const item of getQueue().filter((i) => i.dest === "cards")) {
+    const now = new Date(item.ts || Date.now());
+    const id = makeCardId(now);
+    try {
+      await gh.createFile(`${CARDS_DIR}/${id}/note.md`,
+        utf8b64(buildCardNote({ id, capturedAt: isoLocal(now), noteText: item.text, photoCount: 0 })),
+        `cards: queued capture ${id}`);
+      setQueue(getQueue().filter((q) => !(q.dest === "cards" && q.ts === item.ts)));
+      setStatus("Sent queued card note", "ok");
+    } catch (e) {
+      setStatus(`Queue send failed (${e.message})`, "err");
+      return;
+    }
+  }
+}
 // Send all queued captures for each destination as ONE write, so a backlog
 // cannot race itself into conflicts.
 async function flushQueue() {
   if (!token) return;
+  await flushCardsQueue();
   for (const destKey of ["inbox", "workout"]) {
     const q = getQueue();
     const mine = q.filter((i) => i.dest === destKey);
