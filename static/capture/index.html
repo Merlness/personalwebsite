@@ -153,6 +153,20 @@
   #pending { font-size: 0.85rem; color: var(--danger); text-align: center; margin-top: 6px; min-height: 1.2em; }
   #pending button { background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
 
+  /* linkedin */
+  .photo-btn {
+    padding: 18px 16px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 0.95rem; cursor: pointer;
+  }
+  #liNote { width: 100%; min-height: 140px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 1.02rem; line-height: 1.5; padding: 14px; resize: none; }
+  #liNote:focus { outline: none; border-color: var(--accent); }
+  #liSave { flex: 1; padding: 18px 0; border-radius: 14px; border: none; background: var(--accent); color: #111; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  #liSave:disabled { opacity: 0.4; }
+  #liThumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #liThumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+  .draft-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; white-space: pre-wrap; font-size: 0.92rem; line-height: 1.5; }
+  .draft-actions { display: flex; gap: 8px; margin-top: 10px; }
+
   /* bottom nav */
   nav {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 4;
@@ -219,6 +233,18 @@
     <div id="weekList"></div>
   </section>
 
+  <section id="tab-linkedin" class="hidden">
+    <div class="section-h">New post idea</div>
+    <textarea id="liNote" placeholder="Dictate or type the rough post: what happened, who was there, what's the hook."></textarea>
+    <div class="controls">
+      <label class="photo-btn" for="liPhotos">&#128247; Photos</label>
+      <input type="file" id="liPhotos" accept="image/*" multiple class="hidden">
+      <button id="liSave">Send to drafting</button>
+    </div>
+    <div id="liThumbs"></div>
+    <div id="liDrafts"></div>
+  </section>
+
   <section id="tab-capture" class="hidden">
     <div class="dest-toggle">
       <button id="destInbox" class="active">Inbox</button>
@@ -238,6 +264,7 @@
   <div class="inner">
     <button id="nav-tasks" class="active"><span class="ico">&#9745;</span>Tasks</button>
     <button id="nav-workout"><span class="ico">&#128170;</span>Workout</button>
+    <button id="nav-linkedin"><span class="ico">&#128221;</span>Post</button>
     <button id="nav-capture"><span class="ico">&#127908;</span>Capture</button>
   </div>
 </nav>

@@ -104,6 +104,40 @@ test("concurrent mutateFile calls are serialized, never interleaved", async () =
   assert.deepEqual(order, ["GET", "PUT", "GET", "PUT"], "second write waits for the first");
 });
 
+test("createFile PUTs base64 content without a sha", async () => {
+  const fetch = fakeFetch([{ status: 201, body: {} }]);
+  const gh = new GitHubClient(CFG, fetch);
+  await gh.createFile("drafts/linkedin/inbox/x/photo-1.jpg", "QkFTRTY0", "msg");
+  const body = JSON.parse(fetch.calls[0].opts.body);
+  assert.equal(fetch.calls[0].opts.method, "PUT");
+  assert.equal(body.content, "QkFTRTY0");
+  assert.equal(body.sha, undefined);
+  assert.equal(body.branch, "main");
+});
+
+test("createFile throws on failure status", async () => {
+  const gh = new GitHubClient(CFG, fakeFetch([{ status: 422, body: {} }]));
+  await assert.rejects(() => gh.createFile("a.md", "QQ==", "m"), /422/);
+});
+
+test("listDir returns names and shas, empty array when the dir is missing", async () => {
+  const fetch = fakeFetch([
+    { status: 200, body: [{ name: "post-1.md", sha: "s1", type: "file" }, { name: "sub", sha: "s2", type: "dir" }] },
+    { status: 404, body: {} },
+  ]);
+  const gh = new GitHubClient(CFG, fetch);
+  assert.deepEqual(await gh.listDir("drafts/linkedin/ready"), [{ name: "post-1.md", sha: "s1", type: "file" }, { name: "sub", sha: "s2", type: "dir" }]);
+  assert.deepEqual(await gh.listDir("drafts/linkedin/ready"), []);
+});
+
+test("deleteFile sends DELETE with the sha", async () => {
+  const fetch = fakeFetch([{ status: 200, body: {} }]);
+  const gh = new GitHubClient(CFG, fetch);
+  await gh.deleteFile("drafts/linkedin/ready/post-1.md", "s1", "posted");
+  assert.equal(fetch.calls[0].opts.method, "DELETE");
+  assert.equal(JSON.parse(fetch.calls[0].opts.body).sha, "s1");
+});
+
 test("a failed mutateFile does not block later writes", async () => {
   const fetch = fakeFetch([
     { status: 200, body: { content: utf8ToB64("v\n"), sha: "s" } },

@@ -52,6 +52,31 @@ export class GitHubClient {
     });
   }
 
+  // create a NEW file (no sha): content is already base64 (binary-safe)
+  async createFile(path, base64Content, message) {
+    const res = await this.request(this.contentsPath(path), {
+      method: "PUT",
+      body: JSON.stringify({ message, content: base64Content, branch: this.cfg.branch }),
+    });
+    if (!res.ok) throw new Error(`create ${path} failed (${res.status})`);
+  }
+
+  async listDir(path) {
+    const res = await this.request(`${this.contentsPath(path)}?ref=${encodeURIComponent(this.cfg.branch)}`);
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`list ${path} failed (${res.status})`);
+    const body = await res.json();
+    return body.map((e) => ({ name: e.name, sha: e.sha, type: e.type }));
+  }
+
+  async deleteFile(path, sha, message) {
+    const res = await this.request(this.contentsPath(path), {
+      method: "DELETE",
+      body: JSON.stringify({ message, sha, branch: this.cfg.branch }),
+    });
+    if (!res.ok) throw new Error(`delete ${path} failed (${res.status})`);
+  }
+
   // get -> transform -> put. All writes through this client are serialized
   // (concurrent callers queue up), and sha conflicts are retried with a
   // growing backoff because the Contents API can serve a stale read right

@@ -112,16 +112,113 @@ function setStatus(msg, cls = "") {
 }
 
 // ---------- tabs ----------
+const TABS = ["tasks", "workout", "linkedin", "capture"];
 function showTab(name) {
-  for (const t of ["tasks", "workout", "capture"]) {
+  for (const t of TABS) {
     $(`tab-${t}`).classList.toggle("hidden", t !== name);
     $(`nav-${t}`).classList.toggle("active", t === name);
   }
   $("fab").classList.toggle("hidden", name !== "tasks");
   if (name === "tasks") loadTasks();
   if (name === "workout") loadWorkout();
+  if (name === "linkedin") loadDrafts();
 }
-for (const t of ["tasks", "workout", "capture"]) $(`nav-${t}`).onclick = () => showTab(t);
+for (const t of TABS) $(`nav-${t}`).onclick = () => showTab(t);
+
+// ---------- linkedin tab ----------
+let liFiles = [];
+$("liPhotos").onchange = () => {
+  liFiles = [...$("liPhotos").files];
+  $("liThumbs").innerHTML = "";
+  for (const f of liFiles) {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(f);
+    $("liThumbs").appendChild(img);
+  }
+};
+
+// compress to <=1600px JPEG and return raw base64 (no data: prefix)
+function compressPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$("liSave").onclick = async () => {
+  const noteText = $("liNote").value.trim();
+  if (!noteText) { setStatus("Say or type the post idea first", "err"); return; }
+  $("liSave").disabled = true;
+  setStatus("Uploading…");
+  try {
+    const p = (n) => String(n).padStart(2, "0");
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+    const dir = `drafts/linkedin/inbox/post-${stamp}`;
+    const noteMd = `# LinkedIn post idea\n\nCaptured: ${todayISO()} ${p(d.getHours())}:${p(d.getMinutes())} | Source: capture-pwa\nPhotos: ${liFiles.length}\n\n${noteText}\n`;
+    await gh.createFile(`${dir}/note.md`, utf8b64(noteMd), `linkedin: post idea ${stamp}`);
+    for (let i = 0; i < liFiles.length; i++) {
+      setStatus(`Uploading photo ${i + 1}/${liFiles.length}…`);
+      await gh.createFile(`${dir}/photo-${i + 1}.jpg`, await compressPhoto(liFiles[i]), `linkedin: photo ${i + 1} for ${stamp}`);
+    }
+    $("liNote").value = ""; liFiles = []; $("liThumbs").innerHTML = ""; $("liPhotos").value = "";
+    setStatus("Sent to drafting. The evening run writes the post.", "ok");
+  } catch (e) {
+    setStatus(e.message, "err");
+  } finally {
+    $("liSave").disabled = false;
+  }
+};
+
+function utf8b64(s) {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+async function loadDrafts() {
+  if (!token) return;
+  const root = $("liDrafts");
+  root.innerHTML = "";
+  try {
+    const entries = (await gh.listDir("drafts/linkedin/ready")).filter((e) => e.type === "file" && e.name.endsWith(".md"));
+    const pending = (await gh.listDir("drafts/linkedin/inbox")).filter((e) => e.type === "dir");
+    if (pending.length) root.appendChild(el("div", "muted pad", `${pending.length} idea${pending.length > 1 ? "s" : ""} waiting for the drafting run`));
+    if (entries.length) root.appendChild(el("div", "section-h", `Ready to post (${entries.length})`));
+    for (const e of entries) {
+      const { content } = await gh.getFile(`drafts/linkedin/ready/${e.name}`);
+      const card = el("div", "draft-card", content);
+      const actions = el("div", "draft-actions");
+      actions.appendChild(actionBtn("Copy", async () => {
+        await navigator.clipboard.writeText(content);
+        setStatus("Copied. Paste into LinkedIn and attach your photos.", "ok");
+      }));
+      actions.appendChild(actionBtn("Mark posted", async () => {
+        if (!confirm("Remove this draft? (Stays in git history.)")) return;
+        try {
+          const fresh = (await gh.listDir("drafts/linkedin/ready")).find((x) => x.name === e.name);
+          if (fresh) await gh.deleteFile(`drafts/linkedin/ready/${e.name}`, fresh.sha, "linkedin: posted");
+          loadDrafts();
+        } catch (err) { setStatus(err.message, "err"); }
+      }));
+      card.appendChild(actions);
+      root.appendChild(card);
+    }
+    if (!entries.length && !pending.length) root.appendChild(el("div", "muted pad", "No drafts yet. Send a post idea above; the evening run writes it in your voice."));
+  } catch (e) {
+    root.appendChild(el("div", "muted pad", `Could not load drafts (${e.message})`));
+  }
+}
 
 // ---------- tasks tab ----------
 const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
