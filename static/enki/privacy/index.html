@@ -43,7 +43,7 @@
   <li>We do not upload business-card photos. Text recognition happens on your device.</li>
   <li>We do not scan or upload your address book. If you use Apple's contact picker, Enki receives only the contacts you explicitly select for that capture.</li>
   <li>You review proposed records before Enki writes them to a CRM.</li>
-  <li>We do not use customer captures to train AI models, and we do not opt API content into Anthropic's model-training programs.</li>
+  <li>We do not use customer captures to train AI models, and we do not opt API content into any model-training programs.</li>
 </ul>
 
 <h2>Information Enki processes</h2>
@@ -69,7 +69,7 @@
 <p>If you connect a CRM, Enki stores encrypted OAuth credentials that let Enki act on your behalf. Enki stores the proposed commands, their execution status, and any spreadsheet rows it creates so you can review, retry, or download your work.</p>
 
 <h3>Usage and technical information</h3>
-<p>We record limited operational information such as capture timestamps, processing status, model and token usage, estimated processing cost, error information, and monthly usage counts. Our hosting provider may also produce ordinary security and request logs, such as IP address and request time.</p>
+<p>We record limited operational information such as capture timestamps, processing status, usage and processing metrics, error information, and monthly usage counts. Our hosting provider may also produce ordinary security and request logs, such as IP address and request time.</p>
 
 <h3>Information stored on your device</h3>
 <p>Enki stores authentication credentials in Apple's Keychain and keeps capture history and approved record details locally so you can revisit prior results. Enki also saves contacts to the phone address book only when you choose that action.</p>
@@ -89,10 +89,10 @@
 <h2>Who receives information</h2>
 <p>We disclose information only as needed to operate Enki or at your direction:</p>
 <ul>
-  <li><strong>Anthropic</strong> receives the text and context needed to structure a capture through its commercial API. Anthropic states that commercial API inputs and outputs are not used to train its models unless the customer expressly opts in. Depending on the API feature or model, Anthropic may retain inputs and outputs for a limited period for safety, abuse prevention, or legal compliance. Enki does not opt your captures into model training.</li>
+  <li><strong>A third-party AI provider</strong> receives the text and context needed to structure a capture through its commercial API. That provider does not use commercial API inputs and outputs to train its models unless we expressly opt in. Depending on the API feature or model, the provider may retain inputs and outputs for a limited period for safety, abuse prevention, or legal compliance. Enki does not opt your captures into model training.</li>
   <li><strong>Your selected CRM</strong> receives only the records you approve. Once saved, those records are governed by your agreement and settings with that CRM.</li>
   <li><strong>Apple</strong> provides authentication, device permissions, speech recognition, and App Store services. Apple's handling of those services is governed by Apple's privacy terms and the settings on your device.</li>
-  <li><strong>Hosting and database providers</strong> process encrypted account and capture data to run Enki. Enki uses Fly.io for application hosting and managed PostgreSQL database hosting.</li>
+  <li><strong>Hosting and database providers</strong> process encrypted account and capture data to run Enki. Enki uses reputable cloud hosting and database providers.</li>
 </ul>
 <p>We may also disclose information if required by law, to protect rights or safety, or as part of a business transaction subject to appropriate confidentiality safeguards.</p>
 
