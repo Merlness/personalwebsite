@@ -68,8 +68,8 @@ async function unlockKeys(pin) {
 }
 
 function makeClient() {
-  const { owner, repo, branch } = getSettings();
-  gh = new GitHubClient({ owner, repo, branch: branch || "main", token });
+  const { owner, repo, branch, apiBase } = getSettings();
+  gh = new GitHubClient({ owner, repo, branch: branch || "main", apiBase: apiBase || "", token });
 }
 
 // ---------- offline file cache (read-only fallback) ----------
@@ -796,6 +796,7 @@ function showSettings() {
   $("setOwner").value = s.owner || "Merlness";
   $("setRepo").value = s.repo || "life-organizer";
   $("setBranch").value = s.branch || "main";
+  $("setApiBase").value = s.apiBase || "";
   $("setToken").value = "";
   $("setGemini").value = "";
   $("setPin").value = "";
@@ -806,11 +807,13 @@ $("gearBtn").onclick = showSettings;
 $("setCancelBtn").onclick = () => $("settingsOverlay").classList.add("hidden");
 $("setSaveBtn").onclick = async () => {
   const owner = $("setOwner").value.trim(), repo = $("setRepo").value.trim(), branch = $("setBranch").value.trim() || "main";
+  const apiBase = $("setApiBase").value.trim().replace(/\/+$/, "");
   const tok = $("setToken").value.trim(), gem = $("setGemini").value.trim(), pin = $("setPin").value;
   if (!owner || !repo) { $("setErr").textContent = "Owner and repository are required"; return; }
-  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a GitHub token to finish setup"; return; }
+  if (apiBase && !/^https?:\/\//.test(apiBase)) { $("setErr").textContent = "API server must be a full https:// URL"; return; }
+  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a token to finish setup"; return; }
   if ((tok || gem) && pin.length < 4) { $("setErr").textContent = "Enter your PIN (4+ characters) to save keys"; return; }
-  setSettings({ owner, repo, branch });
+  setSettings({ owner, repo, branch, apiBase });
   if (tok || gem) {
     // changing one key keeps the other; unlock first if it is not in memory
     if (!token && localStorage.getItem(LS.vault)) {

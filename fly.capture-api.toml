@@ -1,0 +1,21 @@
+# Fly config for the capture PWA's API proxy. Personal org, scale-to-zero.
+# Deploy with: fly deploy -c fly.capture-api.toml
+app = "merl-capture-api"
+primary_region = "phx"
+
+[build]
+  dockerfile = "Dockerfile.capture-api"
+
+[env]
+  ALLOWED_ORIGINS = "https://merlmartin.com,http://localhost:8000,http://localhost:3000"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

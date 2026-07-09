@@ -186,3 +186,15 @@ test("mutateFile surfaces transform errors without writing", async () => {
   await assert.rejects(() => gh.mutateFile("tasks.md", () => { throw new Error("task not found"); }, "m"), /task not found/);
   assert.equal(fetch.calls.length, 1, "no PUT attempted");
 });
+
+test("apiBase reroutes requests to the proxy, default stays GitHub", async () => {
+  const fetch1 = fakeFetch([{ status: 200, body: { content: utf8ToB64("x"), sha: "s" } }]);
+  const gh1 = new GitHubClient({ ...CFG, apiBase: "https://merl-capture-api.fly.dev" }, fetch1);
+  await gh1.getFile("tasks.md");
+  assert.ok(fetch1.calls[0].url.startsWith("https://merl-capture-api.fly.dev/repos/Merlness/life-organizer/contents/tasks.md"));
+
+  const fetch2 = fakeFetch([{ status: 200, body: { content: utf8ToB64("x"), sha: "s" } }]);
+  const gh2 = new GitHubClient(CFG, fetch2);
+  await gh2.getFile("tasks.md");
+  assert.ok(fetch2.calls[0].url.startsWith("https://api.github.com/repos/"));
+});

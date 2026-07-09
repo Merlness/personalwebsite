@@ -23,7 +23,9 @@ export class GitHubClient {
   }
 
   async request(path, opts = {}) {
-    return this.fetch("https://api.github.com" + path, {
+    // apiBase points at the capture-api proxy (Fly.io); the token is then
+    // the app token, not a GitHub PAT. Empty means talk to GitHub directly.
+    return this.fetch((this.cfg.apiBase || "https://api.github.com") + path, {
       ...opts,
       headers: {
         Authorization: "Bearer " + this.cfg.token,

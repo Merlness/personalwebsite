@@ -309,13 +309,15 @@
     <input id="setRepo" autocapitalize="off" autocomplete="off">
     <label for="setBranch">Branch</label>
     <input id="setBranch" autocapitalize="off" autocomplete="off">
-    <label for="setToken">GitHub fine-grained token (leave blank to keep current)</label>
+    <label for="setApiBase">API server (optional, blank = GitHub direct)</label>
+    <input id="setApiBase" autocapitalize="off" autocomplete="off" placeholder="https://merl-capture-api.fly.dev">
+    <label for="setToken">Access token (leave blank to keep current)</label>
     <input id="setToken" type="password" autocomplete="off">
     <label for="setGemini">Gemini API key (optional, turns on instant task filing)</label>
     <input id="setGemini" type="password" autocomplete="off">
     <label for="setPin">PIN (required when setting a key)</label>
     <input id="setPin" type="password" inputmode="numeric" autocomplete="off">
-    <p class="hint">Create the token at github.com &gt; Settings &gt; Developer settings &gt; Fine-grained tokens. Grant access to the one organizer repo only, with Contents read and write. The token is encrypted with your PIN and never leaves this device except to call api.github.com.</p>
+    <p class="hint">With an API server set, the token is the app token for that server and no GitHub token is needed on this device. Without one, create a fine-grained token at github.com &gt; Settings &gt; Developer settings, scoped to the one organizer repo with Contents read and write. Either way the token is encrypted with your PIN and never leaves this device except to call that one API.</p>
     <p class="hint">Gemini key (free): aistudio.google.com &gt; Get API key. With it set, clear captures file themselves into the right bucket instantly; ideas and ambiguous notes stay in the inbox for the scheduled triage run.</p>
     <p class="hint">To install: tap the Install button in the header when it appears, or Chrome menu (&#8942;) &gt; "Add to Home screen" &gt; Install.</p>
     <div class="err" id="setErr"></div>
