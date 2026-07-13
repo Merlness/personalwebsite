@@ -67,7 +67,7 @@
 <p>How your voice is handled depends on your phone:</p>
 <ul>
   <li><strong>iPhone:</strong> your voice never leaves your phone. Speech is turned into text on the device, and Enki sends only that text, not any audio.</li>
-  <li><strong>Android:</strong> Enki uses a third-party voice-to-text service. Your recorded audio is sent to Enki's servers and passed to that service to turn it into text. Enki does not keep the audio once it has the text. By default that service does not keep your audio either; it may retain it only briefly, up to 30 days, and only if needed to fix a technical problem or investigate misuse.</li>
+  <li><strong>Android:</strong> Enki uses a third-party voice-to-text service. Your recorded audio is sent to Enki's servers and passed to that service to turn it into text. Enki does not keep the audio once it has the text, and the voice-to-text service is configured not to keep it either.</li>
 </ul>
 
 <h3>CRM and spreadsheet information</h3>
@@ -95,7 +95,7 @@
 <p>We disclose information only as needed to operate Enki or at your direction:</p>
 <ul>
   <li><strong>A third-party AI provider</strong> receives the text and context needed to structure a capture through its commercial API. That provider does not use commercial API inputs and outputs to train its models unless we expressly opt in. Depending on the API feature or model, the provider may retain inputs and outputs for a limited period for safety, abuse prevention, or legal compliance. Enki does not opt your captures into model training.</li>
-  <li><strong>A third-party speech-to-text provider</strong> receives your audio only on Android, and only to turn it into text. By default it does not retain your audio; it may retain it only briefly, up to 30 days, and only to keep the service reliable or investigate misuse. On iPhone, speech is turned into text on your device and no audio is sent to this provider.</li>
+  <li><strong>A third-party speech-to-text provider</strong> receives your audio only on Android, and only to turn it into text. It is configured not to retain your audio. On iPhone, speech is turned into text on your device and no audio is sent to this provider.</li>
   <li><strong>Your selected CRM</strong> receives only the records you approve. Once saved, those records are governed by your agreement and settings with that CRM.</li>
   <li><strong>Apple and Google</strong> provide authentication (Sign in with Apple on iPhone, Sign in with Google on Android), device permissions, App Store and Google Play services, and, on iPhone, on-device speech recognition. Their handling of those services is governed by their own privacy terms and the settings on your device.</li>
   <li><strong>Hosting and database providers</strong> process account and capture data to run Enki. Enki uses reputable cloud hosting and database providers.</li>
