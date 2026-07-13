@@ -63,11 +63,11 @@
 <p>This information may identify people other than the Enki account holder. You are responsible for using Enki only with information you are permitted to process and send to your selected destinations.</p>
 
 <h3>Business-card photos and audio</h3>
-<p>Business-card images are used on your device for text recognition and are not sent to or stored by Enki's servers. Enki sends the recognized text, not the photo.</p>
-<p>How your voice is handled depends on your device:</p>
+<p>Business-card images stay on your device. Text recognition happens on the phone, and Enki sends only the recognized text, never the photo.</p>
+<p>How your voice is handled depends on your phone:</p>
 <ul>
-  <li><strong>On iPhone,</strong> speech recognition runs on your device. Enki sends the resulting transcript for processing, not an audio recording.</li>
-  <li><strong>On Android,</strong> the recorded audio is sent from your device to Enki's servers, which forward it to a third-party speech-to-text provider to produce a transcript. Enki processes the transcript and does not retain the audio after transcription. The provider may retain the audio briefly for safety and abuse prevention as described below.</li>
+  <li><strong>iPhone:</strong> your voice never leaves your phone. Speech is turned into text on the device, and Enki sends only that text, not any audio.</li>
+  <li><strong>Android:</strong> Enki uses a third-party voice-to-text service. Your recorded audio is sent to Enki's servers and passed to that service to turn it into text. Enki does not keep the audio once it has the text. By default that service does not keep your audio either; it may retain it only briefly, up to 30 days, and only if needed to fix a technical problem or investigate misuse.</li>
 </ul>
 
 <h3>CRM and spreadsheet information</h3>
@@ -95,7 +95,7 @@
 <p>We disclose information only as needed to operate Enki or at your direction:</p>
 <ul>
   <li><strong>A third-party AI provider</strong> receives the text and context needed to structure a capture through its commercial API. That provider does not use commercial API inputs and outputs to train its models unless we expressly opt in. Depending on the API feature or model, the provider may retain inputs and outputs for a limited period for safety, abuse prevention, or legal compliance. Enki does not opt your captures into model training.</li>
-  <li><strong>A third-party speech-to-text provider</strong> receives audio when you use voice capture on Android, in order to return a transcript. It processes the audio through its commercial API and may retain it briefly for safety and abuse prevention. On iPhone, speech recognition runs on your device and no audio is sent to this provider.</li>
+  <li><strong>A third-party speech-to-text provider</strong> receives your audio only on Android, and only to turn it into text. By default it does not retain your audio; it may retain it only briefly, up to 30 days, and only to keep the service reliable or investigate misuse. On iPhone, speech is turned into text on your device and no audio is sent to this provider.</li>
   <li><strong>Your selected CRM</strong> receives only the records you approve. Once saved, those records are governed by your agreement and settings with that CRM.</li>
   <li><strong>Apple and Google</strong> provide authentication (Sign in with Apple on iPhone, Sign in with Google on Android), device permissions, App Store and Google Play services, and, on iPhone, on-device speech recognition. Their handling of those services is governed by their own privacy terms and the settings on your device.</li>
   <li><strong>Hosting and database providers</strong> process account and capture data to run Enki. Enki uses reputable cloud hosting and database providers.</li>
