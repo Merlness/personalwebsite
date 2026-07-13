@@ -28,7 +28,7 @@
 <body>
 
 <h1>Enki Privacy Policy</h1>
-<p class="meta"><strong>Effective date:</strong> July 2, 2026</p>
+<p class="meta"><strong>Effective date:</strong> July 13, 2026</p>
 <p class="meta"><strong>App:</strong> Enki</p>
 <p class="meta"><strong>Provider:</strong> Bennu Systems LLC, Scottsdale, Arizona ("Bennu," "we," "us," or "our")</p>
 <p class="meta"><strong>Contact:</strong> <a href="mailto:privacy@bennusystems.com">privacy@bennusystems.com</a></p>
@@ -49,7 +49,7 @@
 <h2>Information Enki processes</h2>
 
 <h3>Account information</h3>
-<p>When you use Sign in with Apple, we receive an account identifier and, if Apple provides them, your name and email address. Apple may provide a private relay email address instead of your personal address.</p>
+<p>When you sign in, we receive an account identifier and, if the provider supplies them, your name and email address. With Sign in with Apple you receive an account identifier and, if Apple provides them, your name and email address; Apple may provide a private relay email address instead of your personal one. With Sign in with Google on Android, we receive the account identifier, name, and email address associated with the Google account you choose.</p>
 
 <h3>Capture and contact information</h3>
 <p>Enki may process:</p>
@@ -63,7 +63,12 @@
 <p>This information may identify people other than the Enki account holder. You are responsible for using Enki only with information you are permitted to process and send to your selected destinations.</p>
 
 <h3>Business-card photos and audio</h3>
-<p>Business-card images are used on your device for text recognition and are not sent to or stored by Enki's servers. Enki sends the recognized text. Speech recognition produces a transcript for processing; Enki sends the transcript, not a stored audio recording.</p>
+<p>Business-card images are used on your device for text recognition and are not sent to or stored by Enki's servers. Enki sends the recognized text, not the photo.</p>
+<p>How your voice is handled depends on your device:</p>
+<ul>
+  <li><strong>On iPhone,</strong> speech recognition runs on your device. Enki sends the resulting transcript for processing, not an audio recording.</li>
+  <li><strong>On Android,</strong> the recorded audio is sent from your device to Enki's servers, which forward it to a third-party speech-to-text provider to produce a transcript. Enki processes the transcript and does not retain the audio after transcription. The provider may retain the audio briefly for safety and abuse prevention as described below.</li>
+</ul>
 
 <h3>CRM and spreadsheet information</h3>
 <p>If you connect a CRM, Enki stores encrypted OAuth credentials that let Enki act on your behalf. Enki stores the proposed commands, their execution status, and any spreadsheet rows it creates so you can review, retry, or download your work.</p>
@@ -72,7 +77,7 @@
 <p>We record limited operational information such as capture timestamps, processing status, usage and processing metrics, error information, and monthly usage counts. Our hosting provider may also produce ordinary security and request logs, such as IP address and request time.</p>
 
 <h3>Information stored on your device</h3>
-<p>Enki stores authentication credentials in Apple's Keychain and keeps capture history and approved record details locally so you can revisit prior results. Enki also saves contacts to the phone address book only when you choose that action.</p>
+<p>Enki stores authentication credentials in the device's secure storage (Apple's Keychain on iPhone, the Android Keystore-backed encrypted store on Android) and keeps capture history and approved record details locally so you can revisit prior results. Enki also saves contacts to the phone address book only when you choose that action.</p>
 
 <h2>How we use information</h2>
 <p>We use the information above only as reasonably necessary to:</p>
@@ -90,8 +95,9 @@
 <p>We disclose information only as needed to operate Enki or at your direction:</p>
 <ul>
   <li><strong>A third-party AI provider</strong> receives the text and context needed to structure a capture through its commercial API. That provider does not use commercial API inputs and outputs to train its models unless we expressly opt in. Depending on the API feature or model, the provider may retain inputs and outputs for a limited period for safety, abuse prevention, or legal compliance. Enki does not opt your captures into model training.</li>
+  <li><strong>A third-party speech-to-text provider</strong> receives audio when you use voice capture on Android, in order to return a transcript. It processes the audio through its commercial API and may retain it briefly for safety and abuse prevention. On iPhone, speech recognition runs on your device and no audio is sent to this provider.</li>
   <li><strong>Your selected CRM</strong> receives only the records you approve. Once saved, those records are governed by your agreement and settings with that CRM.</li>
-  <li><strong>Apple</strong> provides authentication, device permissions, speech recognition, and App Store services. Apple's handling of those services is governed by Apple's privacy terms and the settings on your device.</li>
+  <li><strong>Apple and Google</strong> provide authentication (Sign in with Apple on iPhone, Sign in with Google on Android), device permissions, App Store and Google Play services, and, on iPhone, on-device speech recognition. Their handling of those services is governed by their own privacy terms and the settings on your device.</li>
   <li><strong>Hosting and database providers</strong> process account and capture data to run Enki. Enki uses reputable cloud hosting and database providers.</li>
 </ul>
 <p>We may also disclose information if required by law, to protect rights or safety, or as part of a business transaction subject to appropriate confidentiality safeguards.</p>
@@ -103,7 +109,7 @@
 <p>Deleted information may remain temporarily in encrypted backups until the normal backup rotation completes. <strong>Production backup retention:</strong> up to 30 days. We may retain narrowly limited records longer when required by law, to resolve disputes, or to prevent fraud or abuse, and will disclose that reason when applicable.</p>
 
 <h2>Security</h2>
-<p>Enki transmits server traffic over HTTPS. In production, capture text, transcripts, the draft entries you review before saving, spreadsheet payloads, and CRM credentials are all encrypted at rest. Authentication credentials on the device are stored in Apple's Keychain. No security system can guarantee absolute protection, but we limit collection and access and use safeguards appropriate to the information processed.</p>
+<p>Enki transmits server traffic over HTTPS. In production, capture text, transcripts, the draft entries you review before saving, spreadsheet payloads, and CRM credentials are all encrypted at rest. Authentication credentials on the device are stored in the platform's secure store (Apple's Keychain on iPhone, the Android Keystore-backed encrypted store on Android). No security system can guarantee absolute protection, but we limit collection and access and use safeguards appropriate to the information processed.</p>
 
 <h2>Your choices and rights</h2>
 <p>Depending on where you live, you may have rights to access, correct, export, delete, restrict, or object to processing of personal information associated with your account. Contact <a href="mailto:privacy@bennusystems.com">privacy@bennusystems.com</a>. We may need to verify your identity before fulfilling a request. We will not discriminate against you for exercising a privacy right.</p>
