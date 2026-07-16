@@ -1,4 +1,4 @@
-const CACHE = "capture-v13";
+const CACHE = "capture-v14";
 const SHELL = [
   "./",
   "index.html",
@@ -13,6 +13,7 @@ const SHELL = [
   "js/workout-log.js",
   "js/gemini.js",
   "js/github-api.js",
+  "js/agent-client.js",
 ];
 
 self.addEventListener("install", (e) => {

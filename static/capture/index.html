@@ -170,6 +170,31 @@
   .draft-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; white-space: pre-wrap; font-size: 0.92rem; line-height: 1.5; }
   .draft-actions { display: flex; gap: 8px; margin-top: 10px; }
 
+  /* ask */
+  #askLog { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .ask-msg {
+    max-width: 88%; padding: 10px 14px; border-radius: 14px;
+    font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;
+    border: 1px solid var(--border);
+  }
+  .ask-msg.user { align-self: flex-end; background: #1f1f1f; color: var(--text); }
+  .ask-msg.agent { align-self: flex-start; background: var(--panel); color: var(--text); }
+  .ask-msg.err { align-self: flex-start; color: var(--danger); border-color: #5c2a2a; background: #2a1515; }
+  .ask-msg.pending { color: var(--muted); font-style: italic; }
+  .ask-files { font-size: 0.75rem; color: var(--ok); margin-top: 6px; }
+  .ask-controls { display: flex; gap: 8px; align-items: flex-end; margin-top: 4px; }
+  #askInput {
+    flex: 1; min-height: 52px; max-height: 140px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    color: var(--text); font-size: 1rem; line-height: 1.45; padding: 12px; resize: none;
+  }
+  #askInput:focus { outline: none; border-color: var(--accent); }
+  #askSend {
+    width: 52px; height: 52px; border-radius: 12px; border: none; flex-shrink: 0;
+    background: var(--accent); color: #111; font-size: 1.3rem; font-weight: 700; cursor: pointer;
+  }
+  #askSend:disabled { opacity: 0.4; }
+
   /* bottom nav */
   nav {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 4;
@@ -271,6 +296,14 @@
     </div>
     <div id="pending"></div>
   </section>
+
+  <section id="tab-ask" class="hidden">
+    <div id="askLog"><div class="muted pad">Tell it what to do and it happens now: "swap today's workout to upper body", "add call Bryce to business tasks", "what's left on my list today?"</div></div>
+    <div class="ask-controls">
+      <textarea id="askInput" placeholder="Type or dictate a command"></textarea>
+      <button id="askSend" aria-label="Send">&#10148;</button>
+    </div>
+  </section>
 </main>
 
 <button id="fab" aria-label="Add task">+</button>
@@ -282,6 +315,7 @@
     <button id="nav-linkedin"><span class="ico">&#128221;</span>Post</button>
     <button id="nav-cards"><span class="ico">&#128199;</span>Cards</button>
     <button id="nav-capture"><span class="ico">&#127908;</span>Capture</button>
+    <button id="nav-ask"><span class="ico">&#128172;</span>Ask</button>
   </div>
 </nav>
 
@@ -310,7 +344,7 @@
     <label for="setBranch">Branch</label>
     <input id="setBranch" autocapitalize="off" autocomplete="off">
     <label for="setApiBase">API server (optional, blank = GitHub direct)</label>
-    <input id="setApiBase" autocapitalize="off" autocomplete="off" placeholder="https://merl-capture-api.fly.dev">
+    <input id="setApiBase" autocapitalize="off" autocomplete="off" placeholder="https://merl-personal-api.fly.dev">
     <label for="setToken">Access token (leave blank to keep current)</label>
     <input id="setToken" type="password" autocomplete="off">
     <label for="setGemini">Gemini API key (optional, turns on instant task filing)</label>

@@ -8,6 +8,7 @@ import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
 import { classifyCapture, draftLinkedInPost } from "./gemini.js";
 import { makeCardId, isoLocal, buildCardNote } from "./cards-model.js";
 import { GitHubClient } from "./github-api.js";
+import { askAgent } from "./agent-client.js";
 
 const FILES = {
   tasks: "tasks.md",
@@ -114,7 +115,7 @@ function setStatus(msg, cls = "") {
 }
 
 // ---------- tabs ----------
-const TABS = ["tasks", "workout", "linkedin", "cards", "capture"];
+const TABS = ["tasks", "workout", "linkedin", "cards", "capture", "ask"];
 function showTab(name) {
   for (const t of TABS) {
     $(`tab-${t}`).classList.toggle("hidden", t !== name);
@@ -751,6 +752,52 @@ function setDest(d) {
 }
 $("destInbox").onclick = () => setDest("inbox");
 $("destWorkout").onclick = () => setDest("workout");
+
+// ---------- ask tab ----------
+let askHistory = [];
+
+function askBubble(cls, text) {
+  const div = el("div", "ask-msg " + cls, text);
+  $("askLog").appendChild(div);
+  div.scrollIntoView({ block: "end" });
+  return div;
+}
+
+$("askSend").onclick = async () => {
+  const message = $("askInput").value.trim();
+  if (!message || !token) return;
+  const { apiBase } = getSettings();
+  $("askInput").value = "";
+  $("askSend").disabled = true;
+  askBubble("user", message);
+  const pending = askBubble("agent pending", "Working…");
+  try {
+    const { reply, written } = await askAgent({ apiBase, token, history: askHistory, message });
+    pending.remove();
+    const bubble = askBubble("agent", reply);
+    // Fold agent writes into the local cache so the other tabs render the
+    // new state immediately instead of racing a stale refetch.
+    for (const w of written) {
+      noteWritten(w.path, w.content);
+      if (w.path === FILES.inbox) inboxItems = parseUnprocessed(w.content);
+    }
+    if (written.length) {
+      bubble.appendChild(el("div", "ask-files", "updated: " + written.map((w) => w.path).join(", ")));
+    }
+    askHistory = [...askHistory, { role: "user", content: message }, { role: "assistant", content: reply }].slice(-10);
+  } catch (e) {
+    pending.remove();
+    askBubble("err", e.message);
+  } finally {
+    $("askSend").disabled = false;
+  }
+};
+$("askInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    $("askSend").onclick();
+  }
+});
 
 // ---------- install prompt ----------
 let installEvent = null;
