@@ -143,3 +143,29 @@ func TestHealthzNeedsNoAuth(t *testing.T) {
 		t.Fatalf("got %d, want 200", w.Code)
 	}
 }
+
+func TestAgentMountRequiresAppToken(t *testing.T) {
+	cfg := testConfig("http://unused.invalid")
+	cfg.Agent = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"reply":"ok"}`))
+	})
+	h := NewHandler(cfg)
+
+	if w := do(h, http.MethodPost, "/agent", "", `{"message":"x"}`); w.Code != http.StatusUnauthorized {
+		t.Fatalf("no token: got %d, want 401", w.Code)
+	}
+	if w := do(h, http.MethodPost, "/agent", "wrong", `{"message":"x"}`); w.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong token: got %d, want 401", w.Code)
+	}
+	w := do(h, http.MethodPost, "/agent", "app-secret", `{"message":"x"}`)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "ok") {
+		t.Fatalf("good token: got %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAgentAbsentWhenNotConfigured(t *testing.T) {
+	h := NewHandler(testConfig("http://unused.invalid"))
+	if w := do(h, http.MethodPost, "/agent", "app-secret", `{}`); w.Code == http.StatusOK {
+		t.Fatalf("unmounted /agent should not serve 200, got %d", w.Code)
+	}
+}

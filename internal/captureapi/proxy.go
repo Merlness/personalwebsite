@@ -27,6 +27,8 @@ type Config struct {
 	Upstream string
 	// Client is the HTTP client for upstream calls; http.DefaultClient if nil.
 	Client *http.Client
+	// Agent, when set, is mounted at /agent behind the same app-token check.
+	Agent http.Handler
 }
 
 func (c Config) upstream() string {
@@ -49,7 +51,20 @@ func NewHandler(cfg Config) http.Handler {
 		fmt.Fprintln(w, "ok")
 	})
 	mux.Handle("/repos/", proxyHandler(cfg))
+	if cfg.Agent != nil {
+		mux.Handle("/agent", requireAppToken(cfg, cfg.Agent))
+	}
 	return withCORS(cfg, mux)
+}
+
+func requireAppToken(cfg Config, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !authorized(cfg, r) {
+			http.Error(w, `{"message":"bad app token"}`, http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func withCORS(cfg Config, next http.Handler) http.Handler {
