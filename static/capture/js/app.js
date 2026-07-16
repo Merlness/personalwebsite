@@ -9,6 +9,7 @@ import { classifyCapture, draftLinkedInPost } from "./gemini.js";
 import { makeCardId, isoLocal, buildCardNote } from "./cards-model.js";
 import { GitHubClient } from "./github-api.js";
 import { askAgent } from "./agent-client.js";
+import { parseSetupFragment } from "./setup-link.js";
 
 const FILES = {
   tasks: "tasks.md",
@@ -888,5 +889,12 @@ $("refreshBtn").onclick = () => {
 };
 setQueue(getQueue());
 window.addEventListener("online", flushQueue);
-if (localStorage.getItem(LS.vault)) showUnlock(); else showSettings();
+const setup = parseSetupFragment(location.hash);
+if (setup) {
+  history.replaceState(null, "", location.pathname + location.search);
+  showSettings();
+  $("setApiBase").value = setup.apiBase;
+  $("setToken").value = setup.token;
+  setStatus("Setup link loaded. Pick a PIN and hit Save.", "ok");
+} else if (localStorage.getItem(LS.vault)) showUnlock(); else showSettings();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
