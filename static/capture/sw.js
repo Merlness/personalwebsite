@@ -1,4 +1,4 @@
-const CACHE = "capture-v14";
+const CACHE = "capture-v15";
 const SHELL = [
   "./",
   "index.html",
@@ -14,6 +14,7 @@ const SHELL = [
   "js/gemini.js",
   "js/github-api.js",
   "js/agent-client.js",
+  "js/setup-link.js",
 ];
 
 self.addEventListener("install", (e) => {
