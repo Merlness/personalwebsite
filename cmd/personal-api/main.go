@@ -14,6 +14,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 
 	"personalwebsite/internal/agent"
+	"personalwebsite/internal/auth"
 	"personalwebsite/internal/captureapi"
 	"personalwebsite/internal/lifeorg"
 )
@@ -36,6 +37,10 @@ func main() {
 		handler = degraded()
 	} else {
 		cfg.Agent = buildAgent(cfg)
+		if a := buildAuth(); a != nil {
+			cfg.Auth = a.Handler()
+			cfg.Session = a.Current
+		}
 		handler = captureapi.NewHandler(cfg)
 	}
 
@@ -44,6 +49,10 @@ func main() {
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       20 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		// No WriteTimeout: an /agent reply can legitimately run up to the
+		// handler's 55s budget, and a short WriteTimeout would truncate it.
 	}
 	log.Printf("personal-api listening on %s for %s/%s", addr, cfg.Owner, cfg.Repo)
 	log.Fatal(srv.ListenAndServe())
@@ -66,6 +75,33 @@ func buildAgent(cfg captureapi.Config) http.Handler {
 		Model:  cmp.Or(os.Getenv("AGENT_MODEL"), "claude-haiku-4-5"),
 	}
 	return &agent.Handler{Runner: a}
+}
+
+// buildAuth returns the configured Google sign-in, or nil when the OAuth
+// client and session key are unset (the app-token path stays in force).
+func buildAuth() *auth.Auth {
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	sessionKey := os.Getenv("SESSION_KEY")
+	if clientID == "" || clientSecret == "" || sessionKey == "" {
+		log.Print("auth: GOOGLE_CLIENT_ID/SECRET or SESSION_KEY unset; Google sign-in disabled")
+		return nil
+	}
+	a, err := auth.New(auth.Config{
+		ClientID:      clientID,
+		ClientSecret:  clientSecret,
+		SessionKey:    []byte(sessionKey),
+		RedirectURL:   cmp.Or(os.Getenv("OAUTH_REDIRECT_URL"), "https://api.merlmartin.com/auth/callback"),
+		SuccessURL:    cmp.Or(os.Getenv("OAUTH_SUCCESS_URL"), "https://merlmartin.com/capture/"),
+		CookieDomain:  cmp.Or(os.Getenv("COOKIE_DOMAIN"), "merlmartin.com"),
+		AllowedEmails: strings.Split(cmp.Or(os.Getenv("ALLOWED_EMAILS"), "mmartin777@gmail.com,merl@bennusystems.com"), ","),
+	})
+	if err != nil {
+		log.Printf("WARNING: auth disabled: %v", err)
+		return nil
+	}
+	log.Print("auth: Google sign-in enabled")
+	return a
 }
 
 func degraded() http.Handler {

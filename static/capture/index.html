@@ -359,7 +359,21 @@
   </div>
 </nav>
 
-<!-- PIN unlock -->
+<!-- Sign in -->
+<div id="signinOverlay" class="overlay hidden">
+  <div class="card">
+    <h2>Sign in</h2>
+    <p class="hint">One tap with Google. The session lasts about six months, so on this phone this should be the last time you see this screen. No key is stored on the device.</p>
+    <div class="row">
+      <button class="primary" id="signinBtn">Sign in with Google</button>
+    </div>
+    <div class="row">
+      <button id="signinSettingsBtn">Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN unlock (fallback while the API server has no Google client set) -->
 <div id="pinOverlay" class="overlay hidden">
   <div class="card">
     <h2>Unlock</h2>

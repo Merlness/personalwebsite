@@ -7,7 +7,7 @@ import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
 import { classifyCapture, draftLinkedInPost } from "./gemini.js";
 import { GitHubClient } from "./github-api.js";
-import { streamAgent } from "./agent-client.js";
+import { streamAgent, signedIn, loginURL } from "./agent-client.js";
 import { parseSetupFragment } from "./setup-link.js";
 
 const FILES = {
@@ -25,6 +25,9 @@ let token = null;
 let geminiKey = null;
 let gh = null;
 let dest = "inbox";
+// The app can talk to its store: either a Google session cookie is live, or a
+// token has been unlocked. Everything that touches the network waits on this.
+let ready = false;
 // what the task sheet is doing: {mode:'add'|'edit'|'promote-inbox'|'promote-review', ...}
 let sheetCtx = { mode: "add" };
 
@@ -97,6 +100,7 @@ async function readFile(path) {
     cachePut(path, f.content);
     return { content: f.content, offline: false };
   } catch (e) {
+    noteAuthFailure(e);
     const c = cacheGet()[path];
     if (c) return { content: c.content, offline: true };
     throw e;
@@ -239,7 +243,7 @@ function utf8b64(s) {
 }
 
 async function loadDrafts() {
-  if (!token) return;
+  if (!ready) return;
   const root = $("liDrafts");
   root.innerHTML = "";
   try {
@@ -278,7 +282,7 @@ const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
 let inboxItems = []; // last known unprocessed captures, for re-renders
 
 async function loadTasks() {
-  if (!token) return;
+  if (!ready) return;
   // Instant paint from cache, then revalidate over the network (SWR).
   const cachedTasks = cachedContent(FILES.tasks);
   if (cachedTasks !== null) {
@@ -555,7 +559,7 @@ function renderWorkout(twContent, ledgerContent, programContent, offline) {
 }
 
 async function loadWorkout() {
-  if (!token) return;
+  if (!ready) return;
   // Instant paint from cache, then revalidate over the network (SWR).
   const tw0 = cachedContent(FILES.todayWorkout);
   const led0 = cachedContent(FILES.ledger);
@@ -707,7 +711,7 @@ async function saveCapture(destKey, text) {
 // Send all queued captures for each destination as ONE write, so a backlog
 // cannot race itself into conflicts.
 async function flushQueue() {
-  if (!token) return;
+  if (!ready) return;
   for (const destKey of ["inbox", "workout"]) {
     const q = getQueue();
     const mine = q.filter((i) => i.dest === destKey);
@@ -743,7 +747,7 @@ function setNoteDest(d) {
 
 $("noteBtn").onclick = async () => {
   const text = $("askInput").value.trim();
-  if (!text || !token) return;
+  if (!text || !ready) return;
   $("noteBtn").disabled = true;
   setStatus("Saving…");
   try {
@@ -812,7 +816,7 @@ function applyAgentWrite(w) {
 
 $("askSend").onclick = async () => {
   const message = $("askInput").value.trim();
-  if (!message || !token) return;
+  if (!message || !ready) return;
   const { apiBase } = getSettings();
   $("askInput").value = "";
   $("askSend").disabled = true;
@@ -878,7 +882,32 @@ $("installBtn").onclick = async () => {
 };
 window.addEventListener("appinstalled", () => $("installBtn").classList.add("hidden"));
 
-// ---------- unlock & settings ----------
+// ---------- sign-in ----------
+// Google is the way in: one tap, then a session cookie that outlives the
+// phone's patience, and no credential on the device at all. The PIN vault
+// under it is the fallback, and it only runs while there is no session,
+// which is the case when the API server has no OAuth client configured yet.
+function start() {
+  ready = true;
+  makeClient();
+  $("signinOverlay").classList.add("hidden");
+  $("pinOverlay").classList.add("hidden");
+  flushQueue();
+  showTab("today");
+}
+
+function showSignin() {
+  $("signinOverlay").classList.remove("hidden");
+}
+$("signinBtn").onclick = () => { location.href = loginURL(getSettings().apiBase); };
+$("signinSettingsBtn").onclick = () => { $("signinOverlay").classList.add("hidden"); showSettings(); };
+
+// A session that expired mid-use looks like a 401 from the store. Ask for a
+// new one instead of leaving the app quietly stuck on cached content.
+function noteAuthFailure(e) {
+  if (!token && getSettings().apiBase && /\(401\)/.test(e.message || "")) showSignin();
+}
+
 function showUnlock() {
   if (!localStorage.getItem(LS.vault)) { showSettings(); return; }
   $("pinOverlay").classList.remove("hidden");
@@ -891,10 +920,7 @@ $("pinUnlockBtn").onclick = async () => {
     geminiKey = keys.gemini || null;
     $("pinInput").value = "";
     $("pinErr").textContent = "";
-    $("pinOverlay").classList.add("hidden");
-    makeClient();
-    flushQueue();
-    showTab("today");
+    start();
   } catch {
     $("pinErr").textContent = "Wrong PIN";
   }
@@ -921,7 +947,12 @@ $("setSaveBtn").onclick = async () => {
   const tok = $("setToken").value.trim(), gem = $("setGemini").value.trim(), pin = $("setPin").value;
   if (!owner || !repo) { $("setErr").textContent = "Owner and repository are required"; return; }
   if (apiBase && !/^https?:\/\//.test(apiBase)) { $("setErr").textContent = "API server must be a full https:// URL"; return; }
-  if (!tok && !localStorage.getItem(LS.vault)) { $("setErr").textContent = "Enter a token to finish setup"; return; }
+  // With an API server set you sign in with Google instead, so a token is
+  // only required for the GitHub-direct path.
+  if (!tok && !apiBase && !localStorage.getItem(LS.vault)) {
+    $("setErr").textContent = "Enter a token, or set an API server and sign in with Google";
+    return;
+  }
   if ((tok || gem) && pin.length < 4) { $("setErr").textContent = "Enter your PIN (4+ characters) to save keys"; return; }
   setSettings({ owner, repo, branch, apiBase });
   if (tok || gem) {
@@ -937,10 +968,10 @@ $("setSaveBtn").onclick = async () => {
     if (gem) geminiKey = gem;
     await storeKeys(pin, { gh: token, gemini: geminiKey });
   }
-  if (token) makeClient();
   $("settingsOverlay").classList.add("hidden");
   setStatus(geminiKey ? "Settings saved, instant filing on" : "Settings saved", "ok");
-  if (token) { flushQueue(); showTab("today"); }
+  if (token) start();
+  else if (apiBase) boot();
 };
 
 // ---------- keeping the view live ----------
@@ -962,7 +993,7 @@ function refreshActive() {
   else if (active === "linkedin") loadDrafts();
 }
 function autoRefresh() {
-  if (!token || document.visibilityState !== "visible") return;
+  if (!ready || document.visibilityState !== "visible") return;
   if (Date.now() - lastRefresh < AUTO_REFRESH_MS) return;
   refreshActive();
 }
@@ -973,12 +1004,31 @@ window.addEventListener("focus", autoRefresh);
 $("refreshBtn").onclick = refreshActive;
 setQueue(getQueue());
 window.addEventListener("online", () => { flushQueue(); autoRefresh(); });
-const setup = parseSetupFragment(location.hash);
-if (setup) {
-  history.replaceState(null, "", location.pathname + location.search);
-  showSettings();
-  $("setApiBase").value = setup.apiBase;
-  $("setToken").value = setup.token;
-  setStatus("Setup link loaded. Pick a PIN and hit Save.", "ok");
-} else if (localStorage.getItem(LS.vault)) showUnlock(); else showSettings();
+
+// Boot order, cheapest and least annoying first: a live Google session needs
+// no interaction at all, a stored vault needs the PIN, and a bare install
+// needs setup. A setup link short-circuits all three.
+async function boot() {
+  const setup = parseSetupFragment(location.hash);
+  if (setup) {
+    history.replaceState(null, "", location.pathname + location.search);
+    showSettings();
+    $("setApiBase").value = setup.apiBase;
+    $("setToken").value = setup.token;
+    setStatus("Setup link loaded. Pick a PIN and hit Save.", "ok");
+    return;
+  }
+  const { apiBase } = getSettings();
+  const email = await signedIn(apiBase);
+  if (email) {
+    token = null;
+    start();
+    setStatus("Signed in as " + email, "ok");
+    return;
+  }
+  if (localStorage.getItem(LS.vault)) showUnlock();
+  else if (apiBase) showSignin();
+  else showSettings();
+}
+boot();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");

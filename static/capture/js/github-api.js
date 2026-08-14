@@ -23,16 +23,20 @@ export class GitHubClient {
   }
 
   async request(path, opts = {}) {
-    // apiBase points at the capture-api proxy (Fly.io); the token is then
-    // the app token, not a GitHub PAT. Empty means talk to GitHub directly.
+    // apiBase points at personal-api (Fly.io); the token is then the app
+    // token, not a GitHub PAT. Empty means talk to GitHub directly.
+    const headers = {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(opts.headers || {}),
+    };
+    // Signed in with Google: the session cookie is the credential, and there
+    // is no token on the device at all.
+    if (this.cfg.token) headers.Authorization = "Bearer " + this.cfg.token;
     return this.fetch((this.cfg.apiBase || "https://api.github.com") + path, {
       ...opts,
-      headers: {
-        Authorization: "Bearer " + this.cfg.token,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...(opts.headers || {}),
-      },
+      ...(this.cfg.apiBase ? { credentials: "include" } : {}),
+      headers,
     });
   }
 

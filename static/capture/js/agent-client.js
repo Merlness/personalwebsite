@@ -21,13 +21,36 @@ async function failure(res) {
 function send(fetchFn, { apiBase, token, history, message }, accept) {
   // Bind to the global: native fetch throws "Illegal invocation" otherwise.
   const doFetch = fetchFn.bind(globalThis);
-  const headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json" };
+  // Signed in with Google: the session cookie is the credential, and there is
+  // no token on the device at all.
+  if (token) headers.Authorization = "Bearer " + token;
   if (accept) headers.Accept = accept;
   return doFetch(endpoint(apiBase), {
     method: "POST",
+    credentials: "include",
     headers,
     body: JSON.stringify({ message, history: trimHistory(history || []) }),
   });
+}
+
+// signedIn asks the API whether this browser already has a valid session, so
+// the app can skip every credential prompt when it does.
+export async function signedIn(apiBase, fetchFn = globalThis.fetch) {
+  if (!apiBase) return null;
+  const doFetch = fetchFn.bind(globalThis);
+  try {
+    const res = await doFetch(apiBase.replace(/\/+$/, "") + "/auth/me", { credentials: "include" });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body.email || null;
+  } catch {
+    return null;
+  }
+}
+
+export function loginURL(apiBase) {
+  return apiBase.replace(/\/+$/, "") + "/auth/login";
 }
 
 export async function askAgent(opts, fetchFn = globalThis.fetch) {

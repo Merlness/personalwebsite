@@ -169,3 +169,70 @@ func TestAgentAbsentWhenNotConfigured(t *testing.T) {
 		t.Fatalf("unmounted /agent should not serve 200, got %d", w.Code)
 	}
 }
+
+func TestSessionAuthorizesWithoutAppToken(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"content":"eA==","sha":"s"}`))
+	}))
+	defer upstream.Close()
+
+	cfg := testConfig(upstream.URL)
+	cfg.Agent = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"reply":"ok"}`)) })
+	cfg.Session = func(r *http.Request) (string, bool) {
+		c, err := r.Cookie("sess")
+		return "merl@bennusystems.com", err == nil && c.Value == "good"
+	}
+	h := NewHandler(cfg)
+
+	signedIn := func(method, path string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, strings.NewReader(""))
+		req.AddCookie(&http.Cookie{Name: "sess", Value: "good"})
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		return w
+	}
+	if w := signedIn(http.MethodGet, "/repos/Merlness/life-organizer/contents/tasks.md?ref=main"); w.Code != http.StatusOK {
+		t.Fatalf("files with session: got %d, want 200", w.Code)
+	}
+	if w := signedIn(http.MethodPost, "/agent"); w.Code != http.StatusOK {
+		t.Fatalf("agent with session: got %d, want 200", w.Code)
+	}
+
+	// A bad session must not fall through to unauthenticated access.
+	req := httptest.NewRequest(http.MethodGet, "/repos/Merlness/life-organizer/contents/tasks.md?ref=main", nil)
+	req.AddCookie(&http.Cookie{Name: "sess", Value: "stale"})
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("stale session: got %d, want 401", w.Code)
+	}
+
+	// The app token still works, so the phone keeps running mid-migration.
+	if w := do(h, http.MethodGet, "/repos/Merlness/life-organizer/contents/tasks.md?ref=main", "app-secret", ""); w.Code != http.StatusOK {
+		t.Fatalf("app token: got %d, want 200", w.Code)
+	}
+}
+
+func TestCORSAllowsCredentialsForAllowedOrigin(t *testing.T) {
+	h := NewHandler(testConfig("http://unused.invalid"))
+	req := httptest.NewRequest(http.MethodOptions, "/agent", nil)
+	req.Header.Set("Origin", "https://merlmartin.com")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+
+	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
+		t.Fatalf("allow-credentials = %q, want true", got)
+	}
+	if !strings.Contains(w.Header().Get("Access-Control-Allow-Methods"), "POST") {
+		t.Fatalf("allow-methods = %q, want POST", w.Header().Get("Access-Control-Allow-Methods"))
+	}
+
+	// An unknown origin must get no CORS grant at all.
+	req = httptest.NewRequest(http.MethodOptions, "/agent", nil)
+	req.Header.Set("Origin", "https://evil.test")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Header().Get("Access-Control-Allow-Credentials") != "" || w.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Fatal("CORS granted to an origin that is not on the allowlist")
+	}
+}

@@ -31,6 +31,10 @@ type Config struct {
 	Agent http.Handler
 	// Auth, when set, mounts the Google sign-in flow at /auth/*.
 	Auth http.Handler
+	// Session, when set, reports whether a request carries a valid signed-in
+	// session. A request is authorized by either a session or the app token,
+	// so the phone can drop its token the moment sign-in works.
+	Session func(*http.Request) (string, bool)
 	// Rate limits; zero uses safe defaults. Refill is tokens per minute.
 	AgentBurst        int
 	AgentRefillPerMin float64
@@ -88,6 +92,9 @@ func withCORS(cfg Config, next http.Handler) http.Handler {
 			if origin == allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
+				// The session cookie is the point of sign-in, and a browser
+				// only sends it cross-origin when this is set.
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				// POST is /agent; without it the browser preflight fails.
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, X-GitHub-Api-Version")
@@ -158,6 +165,11 @@ func proxyHandler(cfg Config, writeLimiter *rateLimiter) http.Handler {
 }
 
 func authorized(cfg Config, r *http.Request) bool {
+	if cfg.Session != nil {
+		if _, ok := cfg.Session(r); ok {
+			return true
+		}
+	}
 	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !ok || cfg.AppToken == "" {
 		return false
