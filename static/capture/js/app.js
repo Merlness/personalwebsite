@@ -123,15 +123,16 @@ function setStatus(msg, cls = "") {
 }
 
 // ---------- tabs ----------
-const TABS = ["tasks", "workout", "linkedin", "capture", "ask"];
+const TABS = ["today", "workout", "linkedin"];
 function showTab(name) {
   for (const t of TABS) {
     $(`tab-${t}`).classList.toggle("hidden", t !== name);
     $(`nav-${t}`).classList.toggle("active", t === name);
   }
-  $("fab").classList.toggle("hidden", name !== "tasks");
+  $("fab").classList.toggle("hidden", name !== "today");
   $(`nav-${name}`).classList.remove("changed");
-  if (name === "tasks") loadTasks();
+  setNoteDest(name === "workout" ? "workout" : "inbox");
+  if (name === "today") loadTasks();
   if (name === "workout") loadWorkout();
   if (name === "linkedin") loadDrafts();
 }
@@ -140,7 +141,7 @@ for (const t of TABS) $(`nav-${t}`).onclick = () => showTab(t);
 // Which tab renders a given organizer file. Used to show where an edit landed
 // when the agent changes something the current screen does not display.
 function tabForPath(path) {
-  if (path === FILES.tasks || path === FILES.inbox) return "tasks";
+  if (path === FILES.tasks || path === FILES.inbox) return "today";
   if (path.startsWith("pulse/")) return "workout";
   if (path.startsWith("drafts/linkedin/")) return "linkedin";
   return null;
@@ -291,9 +292,49 @@ async function loadTasks() {
     const [tasks, inbox] = await Promise.all([readFile(FILES.tasks), readFile(FILES.inbox)]);
     inboxItems = parseUnprocessed(inbox.content);
     renderTasks(tasks.content, tasks.offline);
+    renderToday();
+    // The card names today's workout, so keep that file warm and repaint
+    // when it lands. A failure here must not cost us the task list.
+    readFile(FILES.todayWorkout).then(renderToday, () => {});
   } catch (e) {
     if (cachedTasks === null) $("taskList").innerHTML = `<div class="muted pad">Could not load tasks (${e.message})</div>`;
   }
+}
+
+// The first thing on screen: today's workout, what is waiting in the inbox,
+// and how much is actually open. The task list renders under it. Everything
+// here comes from the on-device cache, so it paints with no network at all.
+function renderToday() {
+  const root = $("todayCard");
+  root.innerHTML = "";
+  const card = el("div", "today");
+
+  const row = (key, value, dim, onclick) => {
+    const r = el(onclick ? "button" : "div", "today-row");
+    r.appendChild(el("span", "k", key));
+    r.appendChild(el("span", "v" + (dim ? " dim" : ""), value));
+    if (onclick) {
+      r.appendChild(el("span", "muted", "›"));
+      r.onclick = onclick;
+    }
+    card.appendChild(r);
+  };
+
+  const tw = cachedContent(FILES.todayWorkout);
+  const day = tw ? extractPhoneCard(tw).activeDay : null;
+  row("Workout", day || (tw ? "No card yet" : "Loading"), !day, () => showTab("workout"));
+
+  const n = inboxItems.length;
+  row("Inbox", n ? `${n} capture${n > 1 ? "s" : ""} waiting` : "Clear", !n);
+
+  const md = cachedContent(FILES.tasks);
+  if (md !== null) {
+    const today = todayISO();
+    const all = parseTasks(md).sections.flatMap((s) => s.tasks);
+    const due = all.filter((t) => t.due && t.due <= today).length;
+    row("Tasks", all.length ? `${all.length} open${due ? `, ${due} due or overdue` : ""}` : "All clear", !all.length);
+  }
+  root.appendChild(card);
 }
 
 // Re-render from content we just wrote: a refetch right after a write can
@@ -301,6 +342,7 @@ async function loadTasks() {
 function applyWritten(written) {
   noteWritten(FILES.tasks, written);
   renderTasks(written, false);
+  renderToday();
 }
 
 function renderTasks(md, offline) {
@@ -685,10 +727,24 @@ async function flushQueue() {
     }
   }
 }
-$("saveBtn").onclick = async () => {
-  const text = $("note").value.trim();
-  if (!text) return;
-  $("saveBtn").disabled = true;
+function repaintToday() {
+  const md = cachedContent(FILES.tasks);
+  if (md !== null) renderTasks(md, false);
+  renderToday();
+}
+
+// The note button is the dumb fast path: one direct file write, no tokens, no
+// model, and it queues when offline. Its destination follows the tab you are
+// on, which is what the old Inbox/Workout toggle was for.
+function setNoteDest(d) {
+  dest = d;
+  $("noteBtn").textContent = d === "workout" ? "Workout" : "Note";
+}
+
+$("noteBtn").onclick = async () => {
+  const text = $("askInput").value.trim();
+  if (!text || !token) return;
+  $("noteBtn").disabled = true;
   setStatus("Saving…");
   try {
     // with a Gemini key, clear inbox captures file themselves as tasks
@@ -700,15 +756,16 @@ $("saveBtn").onclick = async () => {
         const written = await gh.mutateFile(FILES.tasks,
           (x) => addTask(x, { section: c.section, priority: c.priority, due: c.due, text: c.text, added: todayISO(), source: "capture-pwa (auto)" }),
           `task: auto-file "${c.text.slice(0, 50)}"`);
-        noteWritten(FILES.tasks, written);
-        $("note").value = "";
+        applyWritten(written);
+        $("askInput").value = "";
         setStatus(`Filed: ${c.section} / ${c.priority}${c.due ? " / due " + c.due : ""}`, "ok");
         flushQueue();
         return;
       }
     }
     await saveCapture(dest, text);
-    $("note").value = "";
+    $("askInput").value = "";
+    repaintToday();
     setStatus(
       geminiDown ? "Gemini unavailable. Saved to Inbox; the triage run will file it."
         : dest === "inbox" ? "Saved to Inbox for triage" : "Saved to Workout",
@@ -716,29 +773,28 @@ $("saveBtn").onclick = async () => {
     flushQueue();
   } catch (e) {
     setQueue([...getQueue(), { dest, text, ts: Date.now() }]);
-    $("note").value = "";
+    $("askInput").value = "";
     setStatus(`Offline or error (${e.message}). Queued on this phone.`, "err");
   } finally {
-    $("saveBtn").disabled = false;
+    $("noteBtn").disabled = false;
   }
 };
-function setDest(d) {
-  dest = d;
-  $("destInbox").classList.toggle("active", d === "inbox");
-  $("destWorkout").classList.toggle("active", d === "workout");
-}
-$("destInbox").onclick = () => setDest("inbox");
-$("destWorkout").onclick = () => setDest("workout");
 
-// ---------- ask tab ----------
+// ---------- ask ----------
 let askHistory = [];
 
 function askBubble(cls, text) {
+  $("askPanel").classList.remove("hidden");
   const div = el("div", "ask-msg " + cls, text);
   $("askLog").appendChild(div);
   div.scrollIntoView({ block: "end" });
   return div;
 }
+$("askClear").onclick = () => {
+  $("askLog").innerHTML = "";
+  askHistory = [];
+  $("askPanel").classList.add("hidden");
+};
 
 // Fold an agent write into the local cache so the other tabs render the new
 // state immediately instead of racing a stale refetch, then point at the tab
@@ -749,6 +805,9 @@ function applyAgentWrite(w) {
   noteWritten(w.path, w.content);
   if (w.path === FILES.inbox) inboxItems = parseUnprocessed(w.content);
   markChanged(tabForPath(w.path));
+  // The today card summarises files from more than one tab, so repaint it
+  // whatever changed. It reads the cache only, so this costs nothing.
+  renderToday();
 }
 
 $("askSend").onclick = async () => {
@@ -835,7 +894,7 @@ $("pinUnlockBtn").onclick = async () => {
     $("pinOverlay").classList.add("hidden");
     makeClient();
     flushQueue();
-    showTab("tasks");
+    showTab("today");
   } catch {
     $("pinErr").textContent = "Wrong PIN";
   }
@@ -881,7 +940,7 @@ $("setSaveBtn").onclick = async () => {
   if (token) makeClient();
   $("settingsOverlay").classList.add("hidden");
   setStatus(geminiKey ? "Settings saved, instant filing on" : "Settings saved", "ok");
-  if (token) { flushQueue(); showTab("tasks"); }
+  if (token) { flushQueue(); showTab("today"); }
 };
 
 // ---------- keeping the view live ----------
@@ -898,7 +957,7 @@ function activeTab() {
 function refreshActive() {
   lastRefresh = Date.now();
   const active = activeTab();
-  if (active === "tasks") loadTasks();
+  if (active === "today") loadTasks();
   else if (active === "workout") loadWorkout();
   else if (active === "linkedin") loadDrafts();
 }
