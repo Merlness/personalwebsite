@@ -1,4 +1,4 @@
-const CACHE = "capture-v15";
+const CACHE = "capture-v17";
 const SHELL = [
   "./",
   "index.html",
@@ -8,7 +8,6 @@ const SHELL = [
   "js/app.js",
   "js/tasks-model.js",
   "js/capture-entry.js",
-  "js/cards-model.js",
   "js/workout-view.js",
   "js/workout-log.js",
   "js/gemini.js",

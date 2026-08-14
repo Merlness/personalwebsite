@@ -167,12 +167,12 @@
     padding: 18px 16px; border-radius: 14px; border: 1px solid var(--border);
     background: var(--panel); color: var(--text); font-size: 0.95rem; cursor: pointer;
   }
-  #liNote, #cardNote { width: 100%; min-height: 140px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 1.02rem; line-height: 1.5; padding: 14px; resize: none; }
-  #liNote:focus, #cardNote:focus { outline: none; border-color: var(--accent); }
-  #liSave, #cardSave { flex: 1; padding: 18px 0; border-radius: 14px; border: none; background: var(--accent); color: var(--on-accent); font-size: 1rem; font-weight: 700; cursor: pointer; }
-  #liSave:disabled, #cardSave:disabled { opacity: 0.4; }
-  #liThumbs, #cardThumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  #liThumbs img, #cardThumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+  #liNote { width: 100%; min-height: 140px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 1.02rem; line-height: 1.5; padding: 14px; resize: none; }
+  #liNote:focus { outline: none; border-color: var(--accent); }
+  #liSave { flex: 1; padding: 18px 0; border-radius: 14px; border: none; background: var(--accent); color: var(--on-accent); font-size: 1rem; font-weight: 700; cursor: pointer; }
+  #liSave:disabled { opacity: 0.4; }
+  #liThumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #liThumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
   .thumb-wrap { position: relative; }
   .thumb-x { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); background: #2a1515; color: var(--danger); font-size: 0.8rem; cursor: pointer; line-height: 1; }
   .mini-btn { font-size: 0.78rem; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: #241e15; color: var(--accent); cursor: pointer; }
@@ -191,6 +191,7 @@
   .ask-msg.err { align-self: flex-start; color: var(--danger); border-color: #5c2a2a; background: #2a1515; }
   .ask-msg.pending { color: var(--muted); font-style: italic; }
   .ask-files { font-size: 0.75rem; color: var(--ok); margin-top: 6px; }
+  .ask-step:not(:empty) { font-size: 0.78rem; color: var(--muted); margin-top: 8px; font-style: italic; }
   .ask-controls { display: flex; gap: 8px; align-items: flex-end; margin-top: 4px; }
   #askInput {
     flex: 1; min-height: 52px; max-height: 140px;
@@ -223,6 +224,12 @@
   }
   nav button.active { color: var(--accent); font-weight: 600; }
   nav button.active .ico { filter: none; transform: translateY(-1px); }
+  /* the agent changed a file this tab renders, and you have not looked yet */
+  nav button.changed { position: relative; }
+  nav button.changed::after {
+    content: ""; position: absolute; top: 6px; left: 50%; margin-left: 9px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  }
 
   /* overlays */
   .overlay {
@@ -288,18 +295,6 @@
     <div id="liDrafts"></div>
   </section>
 
-  <section id="tab-cards" class="hidden">
-    <div class="section-h">Business cards</div>
-    <textarea id="cardNote" placeholder="Where you met, what you talked about, what should happen next. Photos are optional for people already in your CRM."></textarea>
-    <div class="controls">
-      <label class="photo-btn" for="cardPhotos">&#128247; Cards</label>
-      <input type="file" id="cardPhotos" accept="image/*" multiple class="hidden">
-      <button id="cardSave">Save cards</button>
-    </div>
-    <div id="cardThumbs"></div>
-    <div class="muted pad">One save is one capture: the photos and your note travel together. The processing run extracts the contacts, updates the CRM, and drafts any emails you asked for.</div>
-  </section>
-
   <section id="tab-capture" class="hidden">
     <div class="dest-toggle">
       <button id="destInbox" class="active">Inbox</button>
@@ -328,7 +323,6 @@
     <button id="nav-tasks" class="active"><span class="ico">&#9745;</span>Tasks</button>
     <button id="nav-workout"><span class="ico">&#128170;</span>Workout</button>
     <button id="nav-linkedin"><span class="ico">&#128221;</span>Post</button>
-    <button id="nav-cards"><span class="ico">&#128199;</span>Cards</button>
     <button id="nav-capture"><span class="ico">&#127908;</span>Capture</button>
     <button id="nav-ask"><span class="ico">&#128172;</span>Ask</button>
   </div>

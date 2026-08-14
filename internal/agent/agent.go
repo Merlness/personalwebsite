@@ -34,6 +34,26 @@ type Written struct {
 	Content string `json:"content"`
 }
 
+// Event is one step of a streaming run, delivered to the client while the run
+// is still going so the phone shows progress instead of a spinner.
+type Event struct {
+	Type string `json:"type"`
+	// Text is a reply delta for EventText, a human label for EventStep, and
+	// the message for EventError.
+	Text string `json:"text,omitempty"`
+	// Path is set on EventStep and EventWritten.
+	Path string `json:"path,omitempty"`
+	// Content is the complete new file contents, on EventWritten only.
+	Content string `json:"content,omitempty"`
+}
+
+const (
+	EventText    = "text"    // a piece of the reply as the model writes it
+	EventStep    = "step"    // a tool is about to run
+	EventWritten = "written" // a file changed; the client can repaint from it
+	EventError   = "error"
+)
+
 type Agent struct {
 	Client anthropic.Client
 	Store  FileStore
@@ -129,10 +149,16 @@ func writable(p string) bool {
 	return false
 }
 
-// safeRead rejects traversal for reads and listings.
+// safeRead rejects traversal for reads and listings. It holds reads to the
+// same canonicalization as writes (writable): the path must already be clean,
+// so a raw "a/../b" cannot reach the store non-canonicalized. The empty path
+// is allowed because list_dir uses it for the repo root.
 func safeRead(p string) bool {
+	if p == "" {
+		return true
+	}
 	clean := path.Clean(p)
-	return !strings.HasPrefix(clean, "/") && !strings.HasPrefix(clean, "..")
+	return clean == p && !strings.HasPrefix(clean, "/") && !strings.HasPrefix(clean, "..")
 }
 
 func (a *Agent) model() anthropic.Model {
@@ -146,9 +172,7 @@ func textMessage(role anthropic.MessageParamRole, text string) anthropic.Message
 	return anthropic.MessageParam{Role: role, Content: []anthropic.ContentBlockParamUnion{anthropic.NewTextBlock(text)}}
 }
 
-// Run executes one command end to end and returns the reply plus every file
-// the agent wrote, so the client can refresh its views without refetching.
-func (a *Agent) Run(ctx context.Context, history []Turn, message string) (string, []Written, error) {
+func (a *Agent) params(history []Turn, message string) anthropic.MessageNewParams {
 	msgs := make([]anthropic.MessageParam, 0, len(history)+1)
 	for _, t := range history {
 		switch t.Role {
@@ -160,17 +184,61 @@ func (a *Agent) Run(ctx context.Context, history []Turn, message string) (string
 	}
 	msgs = append(msgs, textMessage(anthropic.MessageParamRoleUser, message))
 
-	params := anthropic.MessageNewParams{
+	return anthropic.MessageNewParams{
 		Model:     a.model(),
 		MaxTokens: 4096,
 		System:    []anthropic.TextBlockParam{{Text: a.systemPrompt()}},
 		Tools:     toolDefs(),
 		Messages:  msgs,
 	}
+}
+
+// fetch produces one assistant message. The two implementations are the plain
+// call and the streaming call; everything else about a run is identical.
+type fetch func(context.Context, anthropic.MessageNewParams) (*anthropic.Message, error)
+
+// Run executes one command end to end and returns the reply plus every file
+// the agent wrote, so the client can refresh its views without refetching.
+func (a *Agent) Run(ctx context.Context, history []Turn, message string) (string, []Written, error) {
+	plain := func(ctx context.Context, p anthropic.MessageNewParams) (*anthropic.Message, error) {
+		return a.Client.Messages.New(ctx, p)
+	}
+	return a.loop(ctx, history, message, plain, func(Event) {})
+}
+
+// Stream runs one command and calls emit as the work happens: reply text
+// arrives in pieces, and every tool call is announced before it runs. The
+// return values match Run, so the caller still gets the final reply and the
+// full set of writes when the run finishes.
+func (a *Agent) Stream(ctx context.Context, history []Turn, message string, emit func(Event)) (string, []Written, error) {
+	streamed := func(ctx context.Context, p anthropic.MessageNewParams) (*anthropic.Message, error) {
+		stream := a.Client.Messages.NewStreaming(ctx, p)
+		var acc anthropic.Message
+		for stream.Next() {
+			ev := stream.Current()
+			if err := acc.Accumulate(ev); err != nil {
+				return nil, err
+			}
+			// Only text deltas reach the user; tool-input deltas are partial
+			// JSON and the step event already covers them.
+			if ev.Type == "content_block_delta" && ev.Delta.Text != "" {
+				emit(Event{Type: EventText, Text: ev.Delta.Text})
+			}
+		}
+		if err := stream.Err(); err != nil {
+			return nil, err
+		}
+		return &acc, nil
+	}
+	return a.loop(ctx, history, message, streamed, emit)
+}
+
+func (a *Agent) loop(ctx context.Context, history []Turn, message string, next fetch, emit func(Event)) (string, []Written, error) {
+	params := a.params(history, message)
 
 	var written []Written
 	for i := 0; i < maxIterations; i++ {
-		resp, err := a.Client.Messages.New(ctx, params)
+		resp, err := next(ctx, params)
 		if err != nil {
 			return "", written, fmt.Errorf("anthropic: %w", err)
 		}
@@ -183,7 +251,13 @@ func (a *Agent) Run(ctx context.Context, history []Turn, message string) (string
 		var results []anthropic.ContentBlockParamUnion
 		for _, block := range resp.Content {
 			if variant, ok := block.AsAny().(anthropic.ToolUseBlock); ok {
-				out, isErr := a.execTool(ctx, variant.Name, []byte(variant.JSON.Input.Raw()), &written)
+				input := []byte(variant.JSON.Input.Raw())
+				emit(stepEvent(variant.Name, input))
+				before := len(written)
+				out, isErr := a.execTool(ctx, variant.Name, input, &written)
+				for _, w := range written[before:] {
+					emit(Event{Type: EventWritten, Path: w.Path, Content: w.Content})
+				}
 				results = append(results, anthropic.NewToolResultBlock(variant.ID, out, isErr))
 			}
 		}
@@ -193,6 +267,27 @@ func (a *Agent) Run(ctx context.Context, history []Turn, message string) (string
 		params.Messages = append(params.Messages, anthropic.NewUserMessage(results...))
 	}
 	return "I hit the tool budget before finishing. The changes listed below did land; please retry the rest.", written, nil
+}
+
+var stepLabels = map[string]string{
+	"list_dir":   "listing",
+	"read_file":  "reading",
+	"write_file": "writing",
+}
+
+// stepEvent turns a pending tool call into one short line for the phone.
+func stepEvent(name string, input []byte) Event {
+	label := stepLabels[name]
+	if label == "" {
+		label = name
+	}
+	var in struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(input, &in); err != nil || in.Path == "" {
+		return Event{Type: EventStep, Text: label}
+	}
+	return Event{Type: EventStep, Text: label + " " + in.Path, Path: in.Path}
 }
 
 func (a *Agent) execTool(ctx context.Context, name string, input []byte, written *[]Written) (string, bool) {

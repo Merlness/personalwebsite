@@ -6,9 +6,8 @@ import { buildEntry, insertUnderUnprocessed, insertAllUnderUnprocessed, parseUnp
 import { extractPhoneCard, weekAhead } from "./workout-view.js";
 import { parsePlanItems, buildWorkoutLog } from "./workout-log.js";
 import { classifyCapture, draftLinkedInPost } from "./gemini.js";
-import { makeCardId, isoLocal, buildCardNote } from "./cards-model.js";
 import { GitHubClient } from "./github-api.js";
-import { askAgent } from "./agent-client.js";
+import { streamAgent } from "./agent-client.js";
 import { parseSetupFragment } from "./setup-link.js";
 
 const FILES = {
@@ -19,7 +18,6 @@ const FILES = {
   ledger: "pulse/workout-ledger.md",
   program: "pulse/workout-program.md",
 };
-const CARDS_DIR = "drafts/cards/inbox";
 const LS = { settings: "capture.settings", vault: "capture.vault", queue: "capture.queue", cache: "capture.filecache" };
 const SECTIONS = ["Business", "Personal", "Financial"];
 
@@ -105,6 +103,15 @@ async function readFile(path) {
   }
 }
 
+// Synchronous cache read for instant paint (stale-while-revalidate): returns
+// the freshest on-device copy, or null if this file has never been fetched.
+function cachedContent(path) {
+  const w = recentWrites[path];
+  if (w && Date.now() - w.at < 60000) return w.content;
+  const c = cacheGet()[path];
+  return c ? c.content : null;
+}
+
 // ---------- status ----------
 let statusTimer;
 function setStatus(msg, cls = "") {
@@ -116,18 +123,33 @@ function setStatus(msg, cls = "") {
 }
 
 // ---------- tabs ----------
-const TABS = ["tasks", "workout", "linkedin", "cards", "capture", "ask"];
+const TABS = ["tasks", "workout", "linkedin", "capture", "ask"];
 function showTab(name) {
   for (const t of TABS) {
     $(`tab-${t}`).classList.toggle("hidden", t !== name);
     $(`nav-${t}`).classList.toggle("active", t === name);
   }
   $("fab").classList.toggle("hidden", name !== "tasks");
+  $(`nav-${name}`).classList.remove("changed");
   if (name === "tasks") loadTasks();
   if (name === "workout") loadWorkout();
   if (name === "linkedin") loadDrafts();
 }
 for (const t of TABS) $(`nav-${t}`).onclick = () => showTab(t);
+
+// Which tab renders a given organizer file. Used to show where an edit landed
+// when the agent changes something the current screen does not display.
+function tabForPath(path) {
+  if (path === FILES.tasks || path === FILES.inbox) return "tasks";
+  if (path.startsWith("pulse/")) return "workout";
+  if (path.startsWith("drafts/linkedin/")) return "linkedin";
+  return null;
+}
+function markChanged(tab) {
+  if (!tab) return;
+  if (tab === activeTab()) { refreshActive(); return; }
+  $(`nav-${tab}`).classList.add("changed");
+}
 
 // ---------- linkedin tab ----------
 let liFiles = [];
@@ -249,61 +271,6 @@ async function loadDrafts() {
   }
 }
 
-// ---------- cards tab ----------
-let cardFiles = [];
-$("cardPhotos").onchange = () => {
-  cardFiles = [...cardFiles, ...$("cardPhotos").files];
-  $("cardPhotos").value = "";
-  renderCardThumbs();
-};
-function renderCardThumbs() {
-  $("cardThumbs").innerHTML = "";
-  cardFiles.forEach((f, i) => {
-    const wrap = el("div", "thumb-wrap");
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(f);
-    wrap.appendChild(img);
-    const x = el("button", "thumb-x", "✕");
-    x.onclick = () => { cardFiles.splice(i, 1); renderCardThumbs(); };
-    wrap.appendChild(x);
-    $("cardThumbs").appendChild(wrap);
-  });
-}
-
-$("cardSave").onclick = async () => {
-  const noteText = $("cardNote").value.trim();
-  if (!noteText && !cardFiles.length) { setStatus("Add card photos or a note first", "err"); return; }
-  $("cardSave").disabled = true;
-  try {
-    const now = new Date();
-    const id = makeCardId(now);
-    const dir = `${CARDS_DIR}/${id}`;
-    // photos go up first; note.md lands last as the completion marker, so the
-    // processing run never acts on a folder until it is whole
-    for (let i = 0; i < cardFiles.length; i++) {
-      setStatus(`Uploading card ${i + 1}/${cardFiles.length}…`);
-      await gh.createFile(`${dir}/photo-${i + 1}.jpg`, await compressPhoto(cardFiles[i]), `cards: photo ${i + 1} for ${id}`);
-    }
-    setStatus("Saving…");
-    const noteMd = buildCardNote({ id, capturedAt: isoLocal(now), noteText, photoCount: cardFiles.length });
-    await gh.createFile(`${dir}/note.md`, utf8b64(noteMd), `cards: capture ${id}`);
-    // a future instant-extraction step slots in here: write extracted.json
-    // into the same folder and flip status (see CARDS_FEATURE_PLAN.md)
-    $("cardNote").value = ""; cardFiles = []; renderCardThumbs(); $("cardPhotos").value = "";
-    setStatus("Saved. The processing run files the contacts.", "ok");
-  } catch (e) {
-    if (cardFiles.length) {
-      setStatus(`Upload failed (${e.message}). Photos stay attached; retry when you're back online.`, "err");
-    } else {
-      setQueue([...getQueue(), { dest: "cards", text: noteText, ts: Date.now() }]);
-      $("cardNote").value = "";
-      setStatus(`Offline or error (${e.message}). Queued on this phone.`, "err");
-    }
-  } finally {
-    $("cardSave").disabled = false;
-  }
-};
-
 // ---------- tasks tab ----------
 const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
 
@@ -311,13 +278,21 @@ let inboxItems = []; // last known unprocessed captures, for re-renders
 
 async function loadTasks() {
   if (!token) return;
-  $("taskList").innerHTML = '<div class="muted pad">Loading…</div>';
+  // Instant paint from cache, then revalidate over the network (SWR).
+  const cachedTasks = cachedContent(FILES.tasks);
+  if (cachedTasks !== null) {
+    const cachedInbox = cachedContent(FILES.inbox);
+    if (cachedInbox !== null) inboxItems = parseUnprocessed(cachedInbox);
+    renderTasks(cachedTasks, false);
+  } else {
+    $("taskList").innerHTML = '<div class="muted pad">Loading…</div>';
+  }
   try {
     const [tasks, inbox] = await Promise.all([readFile(FILES.tasks), readFile(FILES.inbox)]);
     inboxItems = parseUnprocessed(inbox.content);
     renderTasks(tasks.content, tasks.offline);
   } catch (e) {
-    $("taskList").innerHTML = `<div class="muted pad">Could not load tasks (${e.message})</div>`;
+    if (cachedTasks === null) $("taskList").innerHTML = `<div class="muted pad">Could not load tasks (${e.message})</div>`;
   }
 }
 
@@ -511,37 +486,51 @@ $("tSave").onclick = async () => {
 };
 
 // ---------- workout tab ----------
+function renderWorkout(twContent, ledgerContent, programContent, offline) {
+  const { activeDay, card } = extractPhoneCard(twContent);
+  const root = $("workoutCard");
+  root.innerHTML = "";
+  if (offline) root.appendChild(el("div", "offline-note", "Offline copy"));
+  root.appendChild(el("div", "section-h", activeDay ? `Up next: ${activeDay}` : "Today"));
+  const cardBox = el("div");
+  root.appendChild(cardBox);
+  if (card) renderWorkoutCard(cardBox, activeDay, card);
+  else cardBox.appendChild(el("div", "card-body", "No card generated yet. Ask me to prep your workout card."));
+
+  const week = weekAhead({ ledgerMd: ledgerContent, programMd: programContent, today: todayISO() });
+  const wl = $("weekList");
+  wl.innerHTML = "";
+  wl.appendChild(el("div", "section-h", "This week"));
+  for (const w of week) {
+    const row = el("div", `week-row ${w.status}`);
+    const d = new Date(w.date + "T00:00:00");
+    row.appendChild(el("span", "week-date", d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })));
+    row.appendChild(el("span", "week-name", `Day ${w.day}: ${w.name}`));
+    row.appendChild(el("span", `badge ${w.status}`, w.status === "done" ? "✓ done" : w.status));
+    wl.appendChild(row);
+  }
+  wl.appendChild(el("div", "muted pad", "Planned dates are suggestions from your 4+1 cadence, not commitments."));
+}
+
 async function loadWorkout() {
   if (!token) return;
-  $("workoutCard").innerHTML = '<div class="muted pad">Loading…</div>';
-  $("weekList").innerHTML = "";
+  // Instant paint from cache, then revalidate over the network (SWR).
+  const tw0 = cachedContent(FILES.todayWorkout);
+  const led0 = cachedContent(FILES.ledger);
+  const prog0 = cachedContent(FILES.program);
+  if (tw0 !== null && led0 !== null && prog0 !== null) {
+    renderWorkout(tw0, led0, prog0, false);
+  } else {
+    $("workoutCard").innerHTML = '<div class="muted pad">Loading…</div>';
+    $("weekList").innerHTML = "";
+  }
   try {
     const [tw, ledger, program] = await Promise.all([
       readFile(FILES.todayWorkout), readFile(FILES.ledger), readFile(FILES.program),
     ]);
-    const offline = tw.offline || ledger.offline || program.offline;
-    const { activeDay, card } = extractPhoneCard(tw.content);
-    const root = $("workoutCard");
-    root.innerHTML = "";
-    if (offline) root.appendChild(el("div", "offline-note", "Offline copy"));
-    root.appendChild(el("div", "section-h", activeDay ? `Up next: ${activeDay}` : "Today"));
-    if (card) renderWorkoutCard(root, activeDay, card);
-    else root.appendChild(el("div", "card-body", "No card generated yet. Ask me to prep your workout card."));
-
-    const week = weekAhead({ ledgerMd: ledger.content, programMd: program.content, today: todayISO() });
-    const wl = $("weekList");
-    wl.appendChild(el("div", "section-h", "This week"));
-    for (const w of week) {
-      const row = el("div", `week-row ${w.status}`);
-      const d = new Date(w.date + "T00:00:00");
-      row.appendChild(el("span", "week-date", d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })));
-      row.appendChild(el("span", "week-name", `Day ${w.day}: ${w.name}`));
-      row.appendChild(el("span", `badge ${w.status}`, w.status === "done" ? "✓ done" : w.status));
-      wl.appendChild(row);
-    }
-    wl.appendChild(el("div", "muted pad", "Planned dates are suggestions from your 4+1 cadence, not commitments."));
+    renderWorkout(tw.content, ledger.content, program.content, tw.offline || ledger.offline || program.offline);
   } catch (e) {
-    $("workoutCard").innerHTML = `<div class="muted pad">Could not load workout (${e.message})</div>`;
+    if (tw0 === null) $("workoutCard").innerHTML = `<div class="muted pad">Could not load workout (${e.message})</div>`;
   }
 }
 
@@ -557,8 +546,12 @@ function getWorkoutState(day) {
 function putWorkoutState(s) { localStorage.setItem(WS_KEY, JSON.stringify(s)); }
 
 function renderWorkoutCard(root, activeDay, card) {
+  root.innerHTML = "";
   const state = getWorkoutState(activeDay);
   const items = parsePlanItems(card);
+  // Local re-render: ticking a checkbox or adjustment only changes on-device
+  // state, so repaint from the card already in memory instead of refetching.
+  const rerender = () => renderWorkoutCard(root, activeDay, card);
 
   // context above the plan (goal, hip check, timing)
   const head = card.split(/^PLAN$/m)[0].trim();
@@ -572,7 +565,7 @@ function renderWorkoutCard(root, activeDay, card) {
     b.onclick = () => {
       state.fields.adjustment = lvl;
       putWorkoutState(state);
-      loadWorkout();
+      rerender();
     };
     adjRow.appendChild(b);
   }
@@ -591,10 +584,11 @@ function renderWorkoutCard(root, activeDay, card) {
     if (it.group !== lastGroup) { root.appendChild(el("div", "wo-group", it.group)); lastGroup = it.group; }
     const row = el("div", "task-row wo-item" + (state.checked[it.text] ? " done" : ""));
     const box = el("button", "checkbox" + (state.checked[it.text] ? " checked" : ""));
+    box.setAttribute("aria-label", (state.checked[it.text] ? "Uncheck " : "Check ") + it.text);
     box.onclick = () => {
       state.checked[it.text] = !state.checked[it.text];
       putWorkoutState(state);
-      loadWorkout();
+      rerender();
     };
     row.appendChild(box);
     row.appendChild(el("div", "task-text", it.text));
@@ -668,28 +662,10 @@ async function saveCapture(destKey, text) {
   noteWritten(path, written);
   if (destKey === "inbox") inboxItems = parseUnprocessed(written);
 }
-// Queued note-only cards each become their own folder, sent one at a time.
-async function flushCardsQueue() {
-  for (const item of getQueue().filter((i) => i.dest === "cards")) {
-    const now = new Date(item.ts || Date.now());
-    const id = makeCardId(now);
-    try {
-      await gh.createFile(`${CARDS_DIR}/${id}/note.md`,
-        utf8b64(buildCardNote({ id, capturedAt: isoLocal(now), noteText: item.text, photoCount: 0 })),
-        `cards: queued capture ${id}`);
-      setQueue(getQueue().filter((q) => !(q.dest === "cards" && q.ts === item.ts)));
-      setStatus("Sent queued card note", "ok");
-    } catch (e) {
-      setStatus(`Queue send failed (${e.message})`, "err");
-      return;
-    }
-  }
-}
 // Send all queued captures for each destination as ONE write, so a backlog
 // cannot race itself into conflicts.
 async function flushQueue() {
   if (!token) return;
-  await flushCardsQueue();
   for (const destKey of ["inbox", "workout"]) {
     const q = getQueue();
     const mine = q.filter((i) => i.dest === destKey);
@@ -764,6 +740,17 @@ function askBubble(cls, text) {
   return div;
 }
 
+// Fold an agent write into the local cache so the other tabs render the new
+// state immediately instead of racing a stale refetch, then point at the tab
+// it landed on. Safe to call twice for the same file: the streamed event and
+// the final payload both report it.
+function applyAgentWrite(w) {
+  if (!w || !w.path) return;
+  noteWritten(w.path, w.content);
+  if (w.path === FILES.inbox) inboxItems = parseUnprocessed(w.content);
+  markChanged(tabForPath(w.path));
+}
+
 $("askSend").onclick = async () => {
   const message = $("askInput").value.trim();
   if (!message || !token) return;
@@ -771,23 +758,39 @@ $("askSend").onclick = async () => {
   $("askInput").value = "";
   $("askSend").disabled = true;
   askBubble("user", message);
-  const pending = askBubble("agent pending", "Working…");
+
+  // One bubble that fills in as the reply is written, with the current tool
+  // step under it, so a slow run shows movement instead of a dead spinner.
+  const bubble = askBubble("agent pending", "Working…");
+  const step = el("div", "ask-step", "");
+  bubble.appendChild(step);
+  let text = "";
+  const paint = () => {
+    bubble.textContent = text;
+    bubble.appendChild(step);
+    bubble.scrollIntoView({ block: "end" });
+  };
+
   try {
-    const { reply, written } = await askAgent({ apiBase, token, history: askHistory, message });
-    pending.remove();
-    const bubble = askBubble("agent", reply);
-    // Fold agent writes into the local cache so the other tabs render the
-    // new state immediately instead of racing a stale refetch.
-    for (const w of written) {
-      noteWritten(w.path, w.content);
-      if (w.path === FILES.inbox) inboxItems = parseUnprocessed(w.content);
-    }
+    const { reply, written } = await streamAgent(
+      { apiBase, token, history: askHistory, message },
+      {
+        onText: (t) => { bubble.classList.remove("pending"); text += t; paint(); },
+        onStep: (s) => { step.textContent = s; bubble.scrollIntoView({ block: "end" }); },
+        onWritten: applyAgentWrite,
+      },
+    );
+    bubble.classList.remove("pending");
+    // The non-streaming fallback delivers the whole reply at the end.
+    if (!text) { text = reply; paint(); }
+    step.remove();
+    for (const w of written) applyAgentWrite(w);
     if (written.length) {
       bubble.appendChild(el("div", "ask-files", "updated: " + written.map((w) => w.path).join(", ")));
     }
     askHistory = [...askHistory, { role: "user", content: message }, { role: "assistant", content: reply }].slice(-10);
   } catch (e) {
-    pending.remove();
+    bubble.remove();
     askBubble("err", e.message);
   } finally {
     $("askSend").disabled = false;
@@ -881,14 +884,36 @@ $("setSaveBtn").onclick = async () => {
   if (token) { flushQueue(); showTab("tasks"); }
 };
 
-// ---------- init ----------
-$("refreshBtn").onclick = () => {
-  const active = ["tasks", "workout", "capture"].find((t) => !$(`tab-${t}`).classList.contains("hidden"));
+// ---------- keeping the view live ----------
+// The app stays open on the phone for days while the scheduled routines edit
+// life-organizer behind its back. Refetch whenever it comes back to the front
+// or regains the network. Throttled, so app switching cannot hammer GitHub;
+// the render is stale-while-revalidate, so a no-op refetch is invisible.
+const AUTO_REFRESH_MS = 20000;
+let lastRefresh = 0;
+
+function activeTab() {
+  return TABS.find((t) => !$(`tab-${t}`).classList.contains("hidden"));
+}
+function refreshActive() {
+  lastRefresh = Date.now();
+  const active = activeTab();
   if (active === "tasks") loadTasks();
-  if (active === "workout") loadWorkout();
-};
+  else if (active === "workout") loadWorkout();
+  else if (active === "linkedin") loadDrafts();
+}
+function autoRefresh() {
+  if (!token || document.visibilityState !== "visible") return;
+  if (Date.now() - lastRefresh < AUTO_REFRESH_MS) return;
+  refreshActive();
+}
+document.addEventListener("visibilitychange", autoRefresh);
+window.addEventListener("focus", autoRefresh);
+
+// ---------- init ----------
+$("refreshBtn").onclick = refreshActive;
 setQueue(getQueue());
-window.addEventListener("online", flushQueue);
+window.addEventListener("online", () => { flushQueue(); autoRefresh(); });
 const setup = parseSetupFragment(location.hash);
 if (setup) {
   history.replaceState(null, "", location.pathname + location.search);

@@ -29,6 +29,13 @@ type Config struct {
 	Client *http.Client
 	// Agent, when set, is mounted at /agent behind the same app-token check.
 	Agent http.Handler
+	// Auth, when set, mounts the Google sign-in flow at /auth/*.
+	Auth http.Handler
+	// Rate limits; zero uses safe defaults. Refill is tokens per minute.
+	AgentBurst        int
+	AgentRefillPerMin float64
+	WriteBurst        int
+	WriteRefillPerMin float64
 }
 
 func (c Config) upstream() string {
@@ -50,9 +57,16 @@ func NewHandler(cfg Config) http.Handler {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")
 	})
-	mux.Handle("/repos/", proxyHandler(cfg))
+	if cfg.Auth != nil {
+		mux.Handle("/auth/", cfg.Auth)
+	}
+	writeLimiter := newRateLimiter(orInt(cfg.WriteBurst, 30), orFloat(cfg.WriteRefillPerMin, 60), nil)
+	mux.Handle("/repos/", proxyHandler(cfg, writeLimiter))
 	if cfg.Agent != nil {
-		mux.Handle("/agent", requireAppToken(cfg, cfg.Agent))
+		// Auth first, then the per-endpoint budget: unauthenticated callers
+		// cannot drain the bucket, and a leaked token still hits the ceiling.
+		agentLimiter := newRateLimiter(orInt(cfg.AgentBurst, 15), orFloat(cfg.AgentRefillPerMin, 30), nil)
+		mux.Handle("/agent", requireAppToken(cfg, rateLimited(agentLimiter, cfg.Agent)))
 	}
 	return withCORS(cfg, mux)
 }
@@ -74,7 +88,8 @@ func withCORS(cfg Config, next http.Handler) http.Handler {
 			if origin == allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
+				// POST is /agent; without it the browser preflight fails.
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, X-GitHub-Api-Version")
 				w.Header().Set("Access-Control-Max-Age", "86400")
 				break
@@ -93,7 +108,7 @@ func withCORS(cfg Config, next http.Handler) http.Handler {
 	})
 }
 
-func proxyHandler(cfg Config) http.Handler {
+func proxyHandler(cfg Config, writeLimiter *rateLimiter) http.Handler {
 	prefix := fmt.Sprintf("/repos/%s/%s/contents/", cfg.Owner, cfg.Repo)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !authorized(cfg, r) {
@@ -110,6 +125,13 @@ func proxyHandler(cfg Config) http.Handler {
 		// including path traversal that would escape it after cleaning.
 		if !strings.HasPrefix(r.URL.Path, prefix) || strings.Contains(r.URL.Path, "..") {
 			http.Error(w, `{"message":"path not allowed"}`, http.StatusForbidden)
+			return
+		}
+		// Reads are cheap and the PWA does many (stale-while-revalidate); only
+		// bound mutations so a leaked token cannot hammer the repo with writes.
+		if (r.Method == http.MethodPut || r.Method == http.MethodDelete) && !writeLimiter.allow() {
+			w.Header().Set("Retry-After", "2")
+			http.Error(w, `{"message":"rate limit exceeded, slow down"}`, http.StatusTooManyRequests)
 			return
 		}
 

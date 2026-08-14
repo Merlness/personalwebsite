@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { askAgent, trimHistory } from "../js/agent-client.js";
+import { askAgent, streamAgent, trimHistory, splitFrames, parseFrame } from "../js/agent-client.js";
 
 function fakeFetch(handlers) {
   const calls = [];
@@ -67,4 +67,87 @@ test("askAgent binds fetch to the global receiver", async () => {
   }
   const res = await askAgent({ apiBase: "https://x.test", token: "t", history: [], message: "hi" }, strictFetch);
   assert.equal(res.reply, "ok");
+});
+
+// ---------- streaming ----------
+
+test("splitFrames returns whole frames and keeps the unfinished tail", () => {
+  const { frames, rest } = splitFrames('data: {"a":1}\n\ndata: {"b":2}\n\ndata: {"c"');
+  assert.deepEqual(frames, ['data: {"a":1}', 'data: {"b":2}']);
+  assert.equal(rest, 'data: {"c"');
+});
+
+test("parseFrame reads the event name and joins multi-line data", () => {
+  assert.deepEqual(parseFrame('event: done\ndata: {"reply":"hi"}'), { event: "done", data: '{"reply":"hi"}' });
+  assert.deepEqual(parseFrame("data: one\ndata: two"), { event: "message", data: "one\ntwo" });
+  assert.deepEqual(parseFrame("data: x\r"), { event: "message", data: "x" });
+});
+
+// Delivers an SSE body in caller-chosen chunks, so a frame split across two
+// network reads is exercised the way it happens on a phone.
+function sseFetch(chunks) {
+  return async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: (k) => (k.toLowerCase() === "content-type" ? "text/event-stream" : null) },
+    body: {
+      getReader() {
+        const enc = new TextEncoder();
+        let i = 0;
+        return {
+          read: async () =>
+            i < chunks.length ? { value: enc.encode(chunks[i++]), done: false } : { value: undefined, done: true },
+        };
+      },
+    },
+  });
+}
+
+test("streamAgent reports text, steps, and writes, then resolves with the done payload", async () => {
+  const fetchFn = sseFetch([
+    'data: {"type":"text","text":"Looking at "}\n\ndata: {"type":"te',
+    'xt","text":"your workout."}\n\n',
+    'data: {"type":"step","text":"reading pulse/today-workout.md"}\n\n',
+    'data: {"type":"written","path":"pulse/today-workout.md","content":"upper"}\n\n',
+    'event: done\ndata: {"reply":"Swapped it.","written":[{"path":"pulse/today-workout.md","content":"upper"}]}\n\n',
+  ]);
+  const text = [], steps = [], writes = [];
+  const res = await streamAgent(
+    { apiBase: "https://x.test", token: "t", history: [], message: "swap today to upper body" },
+    { onText: (t) => text.push(t), onStep: (s) => steps.push(s), onWritten: (w) => writes.push(w) },
+    fetchFn,
+  );
+
+  assert.equal(text.join(""), "Looking at your workout.");
+  assert.deepEqual(steps, ["reading pulse/today-workout.md"]);
+  assert.deepEqual(writes, [{ path: "pulse/today-workout.md", content: "upper" }]);
+  assert.equal(res.reply, "Swapped it.");
+  assert.equal(res.written[0].path, "pulse/today-workout.md");
+});
+
+test("streamAgent rejects on an error frame", async () => {
+  const fetchFn = sseFetch(['data: {"type":"error","text":"agent failed, try again"}\n\n']);
+  await assert.rejects(
+    streamAgent({ apiBase: "https://x.test", token: "t", history: [], message: "hi" }, {}, fetchFn),
+    /agent failed/,
+  );
+});
+
+test("streamAgent falls back to JSON when the server does not stream", async () => {
+  const fetchFn = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => "application/json" },
+    json: async () => ({ reply: "done", written: [] }),
+  });
+  const res = await streamAgent({ apiBase: "https://x.test", token: "t", history: [], message: "hi" }, {}, fetchFn);
+  assert.equal(res.reply, "done");
+});
+
+test("streamAgent surfaces the server error message", async () => {
+  const fetchFn = fakeFetch([{ status: 503, body: { message: "agent not configured" } }]);
+  await assert.rejects(
+    streamAgent({ apiBase: "https://x.test", token: "t", history: [], message: "hi" }, {}, fetchFn),
+    /agent not configured/,
+  );
 });
