@@ -18,7 +18,7 @@ const FILES = {
   ledger: "pulse/workout-ledger.md",
   program: "pulse/workout-program.md",
 };
-const LS = { settings: "capture.settings", vault: "capture.vault", queue: "capture.queue", cache: "capture.filecache" };
+const LS = { settings: "capture.settings", vault: "capture.vault", keys: "capture.keys", queue: "capture.queue", cache: "capture.filecache" };
 const SECTIONS = ["Business", "Personal", "Financial"];
 
 let token = null;
@@ -57,6 +57,18 @@ async function storeKeys(pin, keys) {
   const key = await deriveKey(pin, salt);
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(JSON.stringify(keys)));
   localStorage.setItem(LS.vault, JSON.stringify({ salt: b64(salt), iv: b64(iv), ct: b64(ct) }));
+}
+// No-PIN mode: the keys sit plain in localStorage and the app opens straight
+// in. The phone's own lock screen is the lock. Merl chose this 2026-10-05.
+function loadPlainKeys() {
+  try {
+    const k = JSON.parse(localStorage.getItem(LS.keys));
+    return k && typeof k === "object" && k.gh ? k : null;
+  } catch { return null; }
+}
+function savePlainKeys(keys) {
+  localStorage.setItem(LS.keys, JSON.stringify({ gh: keys.gh, gemini: keys.gemini || null }));
+  localStorage.removeItem(LS.vault);
 }
 // vault v1 stored a bare GitHub token string; v2 stores JSON {gh, gemini}
 async function unlockKeys(pin) {
@@ -457,6 +469,29 @@ function taskRow(t, today, offline) {
   body.appendChild(meta);
   body.onclick = () => { if (!offline) openTaskSheet(t); };
   row.appendChild(body);
+
+  // one-tap delete on the row itself; no need to open the edit sheet
+  const x = document.createElement("button");
+  x.className = "row-x";
+  x.setAttribute("aria-label", "Delete task");
+  x.textContent = "×";
+  x.onclick = async (ev) => {
+    ev.stopPropagation();
+    if (offline) { setStatus("Offline, cannot delete tasks", "err"); return; }
+    if (!confirm(`Delete "${t.text.slice(0, 80)}"?`)) return;
+    x.disabled = true;
+    row.classList.add("fading");
+    try {
+      const written = await gh.mutateFile(FILES.tasks, (c) => deleteTask(c, t.line), `task: delete "${t.text.slice(0, 50)}"`);
+      setStatus("Deleted", "ok");
+      applyWritten(written);
+    } catch (e) {
+      row.classList.remove("fading");
+      x.disabled = false;
+      setStatus(e.message, "err");
+    }
+  };
+  row.appendChild(x);
   return row;
 }
 
@@ -918,6 +953,7 @@ $("pinUnlockBtn").onclick = async () => {
     const keys = await unlockKeys($("pinInput").value);
     token = keys.gh;
     geminiKey = keys.gemini || null;
+    if ($("pinRemember").checked) savePlainKeys(keys);
     $("pinInput").value = "";
     $("pinErr").textContent = "";
     start();
@@ -949,24 +985,37 @@ $("setSaveBtn").onclick = async () => {
   if (apiBase && !/^https?:\/\//.test(apiBase)) { $("setErr").textContent = "API server must be a full https:// URL"; return; }
   // With an API server set you sign in with Google instead, so a token is
   // only required for the GitHub-direct path.
-  if (!tok && !apiBase && !localStorage.getItem(LS.vault)) {
+  if (!tok && !apiBase && !localStorage.getItem(LS.vault) && !loadPlainKeys()) {
     $("setErr").textContent = "Enter a token, or set an API server and sign in with Google";
     return;
   }
-  if ((tok || gem) && pin.length < 4) { $("setErr").textContent = "Enter your PIN (4+ characters) to save keys"; return; }
+  if (pin && pin.length < 4) { $("setErr").textContent = "A PIN needs 4+ characters, or leave it blank for no lock"; return; }
   setSettings({ owner, repo, branch, apiBase });
   if (tok || gem) {
-    // changing one key keeps the other; unlock first if it is not in memory
-    if (!token && localStorage.getItem(LS.vault)) {
-      try {
-        const old = await unlockKeys(pin);
-        token = old.gh;
-        geminiKey = old.gemini || null;
-      } catch { $("setErr").textContent = "Wrong PIN"; return; }
+    // changing one key keeps the other; load the current keys first if they
+    // are not in memory (plain store, or the PIN vault)
+    if (!token) {
+      const plain = loadPlainKeys();
+      if (plain) {
+        token = plain.gh;
+        geminiKey = plain.gemini || null;
+      } else if (localStorage.getItem(LS.vault)) {
+        if (!pin) { $("setErr").textContent = "Enter your current PIN once to change keys"; return; }
+        try {
+          const old = await unlockKeys(pin);
+          token = old.gh;
+          geminiKey = old.gemini || null;
+        } catch { $("setErr").textContent = "Wrong PIN"; return; }
+      }
     }
     if (tok) token = tok;
     if (gem) geminiKey = gem;
-    await storeKeys(pin, { gh: token, gemini: geminiKey });
+    if (pin) {
+      await storeKeys(pin, { gh: token, gemini: geminiKey });
+      localStorage.removeItem(LS.keys);
+    } else {
+      savePlainKeys({ gh: token, gemini: geminiKey });
+    }
   }
   $("settingsOverlay").classList.add("hidden");
   setStatus(geminiKey ? "Settings saved, instant filing on" : "Settings saved", "ok");
@@ -1024,6 +1073,13 @@ async function boot() {
     token = null;
     start();
     setStatus("Signed in as " + email, "ok");
+    return;
+  }
+  const plain = loadPlainKeys();
+  if (plain) {
+    token = plain.gh;
+    geminiKey = plain.gemini || null;
+    start();
     return;
   }
   if (localStorage.getItem(LS.vault)) showUnlock();

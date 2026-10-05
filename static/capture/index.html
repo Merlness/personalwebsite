@@ -77,6 +77,13 @@
   }
   .checkbox:active { background: var(--accent); }
   .task-body { flex: 1; cursor: pointer; }
+  .row-x {
+    width: 30px; height: 30px; flex-shrink: 0; margin-top: 0; padding: 0;
+    border-radius: 50%; border: 1px solid var(--border); background: #2a1515;
+    color: var(--danger); font-size: 1rem; line-height: 1; cursor: pointer;
+  }
+  .card label.check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text); margin-top: 10px; }
+  .card label.check input { width: auto; margin: 0; }
   .task-text { font-size: 0.98rem; line-height: 1.45; }
   .task-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
   .chip { font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
@@ -380,10 +387,11 @@
     <label for="pinInput">PIN</label>
     <input id="pinInput" type="password" inputmode="numeric" autocomplete="off">
     <div class="err" id="pinErr"></div>
+    <label class="check"><input type="checkbox" id="pinRemember" checked> Don't ask for the PIN on this phone again</label>
     <div class="row">
       <button class="primary" id="pinUnlockBtn">Unlock</button>
     </div>
-    <p class="hint">Forgot the PIN? Open settings and re-enter your token to reset it.</p>
+    <p class="hint">Forgot the PIN? Open settings and re-enter your token to reset it. With the box checked, the token stays unlocked on this phone and the PIN screen never comes back.</p>
   </div>
 </div>
 
@@ -403,9 +411,9 @@
     <input id="setToken" type="password" autocomplete="off">
     <label for="setGemini">Gemini API key (optional, turns on instant task filing)</label>
     <input id="setGemini" type="password" autocomplete="off">
-    <label for="setPin">PIN (required when setting a key)</label>
+    <label for="setPin">PIN (optional, leave blank for no lock on this phone)</label>
     <input id="setPin" type="password" inputmode="numeric" autocomplete="off">
-    <p class="hint">With an API server set, the token is the app token for that server and no GitHub token is needed on this device. Without one, create a fine-grained token at github.com &gt; Settings &gt; Developer settings, scoped to the one organizer repo with Contents read and write. Either way the token is encrypted with your PIN and never leaves this device except to call that one API.</p>
+    <p class="hint">With an API server set, the token is the app token for that server and no GitHub token is needed on this device. Without one, create a fine-grained token at github.com &gt; Settings &gt; Developer settings, scoped to the one organizer repo with Contents read and write. Either way the token never leaves this device except to call that one API. With a PIN it is encrypted and asked for on every launch; with no PIN it is stored plain on this phone and the app opens straight in.</p>
     <p class="hint">Gemini key (free): aistudio.google.com &gt; Get API key. With it set, clear captures file themselves into the right bucket instantly; ideas and ambiguous notes stay in the inbox for the scheduled triage run.</p>
     <p class="hint">To install: tap the Install button in the header when it appears, or Chrome menu (&#8942;) &gt; "Add to Home screen" &gt; Install.</p>
     <div class="err" id="setErr"></div>
