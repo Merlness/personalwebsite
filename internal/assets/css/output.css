@@ -1287,9 +1287,10 @@ body {
   background-attachment: fixed;
 }
 
-/* Three thin stripes at the top: purple, pink, marigold. */
+/* Three thin stripes at the top: purple, pink, marigold. Only the site
+   header, not a header element inside a page (the journey hero is one). */
 
-header {
+body > header {
   border-top: 3px solid transparent;
   -o-border-image: linear-gradient(90deg, #6b3fa0 0 33.3%, #e8467c 33.3% 66.6%, #f4b223 66.6% 100%) 1;
      border-image: linear-gradient(90deg, #6b3fa0 0 33.3%, #e8467c 33.3% 66.6%, #f4b223 66.6% 100%) 1;
@@ -1297,7 +1298,7 @@ header {
   background-color: rgba(2, 3, 8, 0.6);
 }
 
-header nav a, footer, .font-mono {
+body > header nav a, footer, .font-mono {
   font-family: "DM Mono", ui-monospace, Menlo, monospace;
 }
 
