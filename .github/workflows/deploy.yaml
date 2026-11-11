@@ -45,6 +45,11 @@ jobs:
       - name: Run Capture App Tests
         run: npm test
 
+      # Gate the deploy on the Go suite: a logic regression that still
+      # compiles must not be able to ship to merlmartin.com.
+      - name: Run Go Tests
+        run: go test ./...
+
       - name: Build CSS
         run: npm run build-css -- --minify
 

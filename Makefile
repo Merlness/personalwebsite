@@ -4,7 +4,7 @@ build-css:
 	npx tailwindcss -i ./internal/assets/css/input.css -o ./internal/assets/css/output.css
 
 generate:
-	go run github.com/a-h/templ/cmd/templ@latest generate
+	go run github.com/a-h/templ/cmd/templ@v0.3.977 generate
 
 run: generate build-css
 	go run cmd/server/main.go

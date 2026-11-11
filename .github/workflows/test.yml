@@ -29,8 +29,11 @@ jobs:
     - name: Verify Dependencies
       run: go mod verify
 
+    - name: Vet
+      run: go vet ./...
+
     - name: Run Tests
-      run: go test -v ./...
+      run: go test -race ./...
 
     - name: Setup Node
       uses: actions/setup-node@v5
