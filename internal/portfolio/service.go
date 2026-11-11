@@ -64,7 +64,7 @@ func (s *filesystemService) GetCategory(name string) (Category, error) {
 
 var preferredOrder = []string{"Landscape", "People", "Wildlife", "Structures"}
 
-var adventureCategories = map[string]bool{"Alaska": true}
+var adventureCategories = map[string]bool{"Alaska": true, "RoadTrip2020": true}
 
 func groupForCategory(name string) string {
 	if adventureCategories[name] {

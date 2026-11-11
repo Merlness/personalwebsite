@@ -1,0 +1,232 @@
+/* Home page: the star chart. Each part of the site is a constellation.
+   The First light cover opens once per visit. */
+.sc, .sc-cover {
+  --night: #070b1c;
+  --deep: #03050c;
+  --paper: #f3e9d2;
+  --dim: rgba(243, 233, 210, 0.55);
+  --faint: rgba(243, 233, 210, 0.16);
+  --marigold: #f4b223;
+  --pink: #e8467c;
+  --purple: #6b3fa0;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+  --serif: "Fraunces", Georgia, serif;
+}
+.sc, .sc-cover { color: var(--paper); font-family: var(--serif); }
+.sc *, .sc-cover * { box-sizing: border-box; }
+.mono { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; }
+
+/* ---------- cover: "first light" ---------- */
+.sc-cover {
+  --first-light-duration: 620ms;
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center; text-align: center;
+  background: radial-gradient(circle at 50% 45%, #0e1330 0, var(--deep) 62%);
+}
+.sc-cover-inner { padding: 24px; max-width: 40rem; }
+.lens-button { display: block; margin: 0.4rem auto 0; padding: 0; border: 0; background: none; cursor: pointer; }
+.lens-button:focus-visible { outline: none; }
+.lens-button:focus-visible .lens { outline: 2px solid var(--pink); outline-offset: 4px; }
+.lens-label { display: block; color: var(--marigold); font-size: 0.8rem; letter-spacing: 0.24em; }
+.lens {
+  display: block;
+  position: relative;
+  width: min(62vw, 230px);
+  margin: 0 auto 1.4rem;
+  border-radius: 50%;
+  transition: transform 150ms ease-out;
+}
+.lens img { display: block; width: 100%; height: auto; }
+.lens .aperture { display: block; width: 100%; height: auto; }
+/* Each blade slides out toward the rim, so the hexagon grows: a little on
+   hover, and wide open on the click. */
+.lens .blade { transition: transform 0.7s cubic-bezier(0.6, 0, 0.2, 1); }
+.lens-button:hover .blade, .lens-button:focus-visible .blade { transform: translateY(-5px); }
+html.sc-open .lens .blade { transform: translateY(-34px); }
+@media (prefers-reduced-motion: reduce) { .lens .blade { transition: none; } }
+@media (hover: hover) {
+  .lens-button:hover .lens { transform: translateY(-2px); }
+  .lens-button:hover .lens-label { color: var(--paper); }
+}
+.lens-button:active .lens { transform: scale(0.98); }
+.lens-shutter {
+  position: absolute;
+  inset: 17%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.lens-shutter::before, .lens-shutter::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: calc(50% + 1px);
+  transform: translateY(var(--shutter-rest));
+}
+.lens-shutter::before {
+  --shutter-rest: -100%;
+  top: 0;
+  background: #151a36;
+}
+.lens-shutter::after {
+  --shutter-rest: 100%;
+  bottom: 0;
+  background: #0d1230;
+  box-shadow: inset 0 1px var(--faint);
+}
+.sc-cover h1 { font-weight: 300; font-size: clamp(2.6rem, 9vw, 5.5rem); line-height: 0.95; margin: 0.6rem 0 0.8rem; letter-spacing: -0.01em; }
+.sc-cover h1 em { font-weight: 400; color: var(--marigold); }
+.sc-cover p { color: var(--dim); font-size: 1.05rem; margin: 0 auto 1.6rem; max-width: 30ch; }
+.btn {
+  font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--deep); background: var(--marigold); border: 0; border-radius: 999px;
+  padding: 1rem 1.8rem; cursor: pointer;
+}
+.btn:hover { background: #ffc94a; }
+.btn:focus-visible, a:focus-visible { outline: 2px solid var(--pink); outline-offset: 4px; }
+.skip { display: block; margin-top: 1.2rem; color: var(--dim); }
+html.sc-open .lens-shutter::before, html.sc-open .lens-shutter::after {
+  animation: first-light-shutter var(--first-light-duration) both;
+}
+html.sc-open .sc-cover {
+  animation: first-light-reveal var(--first-light-duration) ease-out both;
+  pointer-events: none;
+}
+html.sc-seen .sc-cover { display: none; }
+@keyframes first-light-shutter {
+  0% {
+    transform: translateY(var(--shutter-rest));
+    animation-timing-function: cubic-bezier(0.4, 0, 0.65, 1);
+  }
+  21% { transform: translateY(0); }
+  32% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.2, 0, 0.3, 1);
+  }
+  100% { transform: translateY(var(--shutter-rest)); }
+}
+@keyframes first-light-reveal {
+  0%, 36% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* ---------- the chart ---------- */
+.sc .stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 2vw; align-items: center; padding: 0 0 24px; max-width: 1280px; margin: 0 auto; }
+.chart { width: 100%; max-width: 820px; margin: 0 auto; display: block; }
+.ring { fill: none; stroke: var(--faint); stroke-width: 1; }
+.ring.edge { stroke: var(--dim); }
+.spice { fill: none; stroke-width: 3; }
+.grid { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 2 7; }
+.tick { font-family: var(--mono); font-size: 13px; letter-spacing: 0.2em; fill: var(--dim); text-anchor: middle; }
+.field { transform-origin: 500px 500px; animation: drift 900s linear infinite; }
+@keyframes drift { to { transform: rotate(360deg); } }
+.star { fill: var(--paper); }
+.way { fill: url(#way); opacity: 0.5; }
+.con line { stroke: var(--dim); stroke-width: 1.2; transition: stroke 0.3s, stroke-width 0.3s; }
+.con circle { fill: var(--paper); transition: fill 0.3s, r 0.3s; }
+.con .lead { fill: var(--marigold); }
+.con text { font-family: var(--mono); font-size: 15px; letter-spacing: 0.22em; fill: var(--paper); text-transform: uppercase; }
+.con .sub { font-family: var(--serif); font-style: italic; font-size: 15px; letter-spacing: 0; fill: var(--dim); text-transform: none; }
+.con .hit { fill: transparent; stroke: none; }
+a.con { cursor: pointer; outline: none; }
+a.con:hover line, a.con:focus-visible line, a.con.on line { stroke: var(--marigold); stroke-width: 2; }
+a.con:hover .lead, a.con:focus-visible .lead, a.con.on .lead { fill: var(--pink); }
+a.con:focus-visible .hit { stroke: var(--pink); stroke-width: 2; stroke-dasharray: 4 6; }
+
+/* ---------- the plate: what the telescope is pointed at ---------- */
+.plate { border: 1px solid var(--faint); padding: 14px; background: rgba(4, 6, 14, 0.75); }
+.plate figure { margin: 0; }
+.plate img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #141a3a; }
+.plate h2 { font-weight: 500; font-size: 1.9rem; margin: 0.9rem 0 0.2rem; }
+.plate p { margin: 0 0 0.9rem; color: var(--dim); line-height: 1.5; }
+.plate dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0 0 1rem; color: var(--dim); }
+.plate dt { opacity: 0.7; } .plate dd { margin: 0; color: var(--paper); }
+.plate .go { color: var(--marigold); text-decoration: none; }
+.moon { display: flex; align-items: center; gap: 0.8rem; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--faint); color: var(--dim); }
+
+.motto { text-align: center; font-style: italic; font-size: clamp(1.2rem, 2.6vw, 1.8rem); padding: 10px 24px 6px; }
+.motto span { color: var(--marigold); }
+.list { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem 1.6rem; padding: 14px 24px 46px; margin: 0; list-style: none; }
+.sc .list a { color: inherit; }
+.list a { text-decoration: none; border-bottom: 1px solid var(--faint); padding-bottom: 2px; }
+
+@media (max-width: 860px) {
+  .sc .stage { grid-template-columns: 1fr; padding: 0 0 16px; }
+  .con text { font-size: 22px; } .con .sub { font-size: 20px; } .tick { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field { animation: none; }
+  .lens-button:is(:hover, :active) .lens { transform: none; }
+  .lens { transition: none; }
+  html.sc-open .lens-shutter::before, html.sc-open .lens-shutter::after { animation: none; }
+  html.sc-open .sc-cover { animation: none; visibility: hidden; }
+}
+
+/* The spice: the Milky Way runs warm, from purple through pink to marigold,
+   and now and then a meteor in the same colors crosses the chart. */
+.way { opacity: 0.62; }
+.meteor {
+  stroke: url(#heat); stroke-width: 2.5; stroke-linecap: round;
+  stroke-dasharray: 90 1200; stroke-dashoffset: 90; opacity: 0;
+  animation: meteor 14s ease-in 3s infinite;
+}
+.meteor.m2 { animation-delay: 10s; animation-duration: 19s; }
+@keyframes meteor {
+  0% { stroke-dashoffset: 90; opacity: 0; }
+  2% { opacity: 1; }
+  9% { stroke-dashoffset: -520; opacity: 0; }
+  100% { stroke-dashoffset: -520; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .meteor { animation: none; } }
+
+/* Dive in: a click on a constellation flies the chart into that shape (through
+   the lens, onto the page, up to the summit), then the next page opens. */
+.sc .chart { transition: transform 0.9s cubic-bezier(0.7, 0, 0.9, 0.35); will-change: transform; }
+.sc.diving .chart { transform: scale(16); }
+.sc.diving .plate, .sc.diving .motto, .sc.diving .list { opacity: 0; transition: opacity 0.3s; }
+.sc-fade { position: fixed; inset: 0; z-index: 55; background: #03050c; opacity: 0; pointer-events: none; transition: opacity 0.75s ease-in 0.15s; }
+html.sc-diving .sc-fade { opacity: 1; }
+html.sc-diving { overflow: hidden; }
+
+/* The short action before a dive. Each lasts about half a second. */
+.act * { transform-box: fill-box; vector-effect: non-scaling-stroke; }
+.act .shutter { fill: var(--deep); stroke: var(--marigold); stroke-width: 2; transform-origin: center; animation: shutter 0.5s ease-in-out both; }
+.act .flash { fill: #fff; transform-origin: center; animation: flash 0.5s ease-out both; }
+@keyframes shutter { 0% { transform: scale(1) rotate(0); fill-opacity: 0; } 45% { transform: scale(0.12) rotate(60deg); fill-opacity: 1; } 100% { transform: scale(1) rotate(0); fill-opacity: 0; } }
+@keyframes flash { 0%, 40% { transform: scale(0.2); opacity: 0; } 55% { transform: scale(2.6); opacity: 0.95; } 100% { transform: scale(3.4); opacity: 0; } }
+.act .climb { fill: none; stroke: var(--marigold); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.4s ease-in forwards; }
+.act .flag { fill: var(--pink); stroke: var(--paper); stroke-width: 1.5; stroke-linejoin: round; transform-origin: 0% 100%; transform: scale(0); animation: pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.34s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop { to { transform: scale(1); } }
+.act .page { fill: rgba(243, 233, 210, 0.22); stroke: var(--marigold); stroke-width: 2; transform-origin: 0% 50%; animation: turn 0.5s ease-in-out both; }
+@keyframes turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.02) skewY(-8deg); fill: rgba(243, 233, 210, 0.5); } 100% { transform: scaleX(-1); } }
+.act .key { fill: var(--marigold); opacity: 0; animation: key 0.12s steps(1) forwards; }
+.act .key.k1 { animation-delay: 0.14s; } .act .key.k2 { animation-delay: 0.28s; fill: var(--pink); }
+@keyframes key { to { opacity: 1; } }
+.act .beam { stroke: var(--marigold); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.3s ease-out forwards; }
+.act .found { fill: none; stroke: var(--pink); stroke-width: 3; stroke-linecap: round; transform-origin: center; transform: scale(0); animation: pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) 0.28s forwards; }
+
+/* A supernova: now and then one star flares and fades. */
+.nova circle { fill: #fff; transform-box: fill-box; transform-origin: center; }
+.nova .core { animation: nova-core 5s ease-out forwards; }
+.nova .shell { fill: none; stroke: var(--pink); stroke-width: 1.5; animation: nova-shell 5s ease-out forwards; }
+.nova .shell.s2 { stroke: var(--marigold); animation-delay: 0.5s; }
+@keyframes nova-core { 0% { transform: scale(0.3); opacity: 0; } 12% { transform: scale(3.2); opacity: 1; } 40% { transform: scale(1.4); opacity: 0.9; } 100% { transform: scale(0.4); opacity: 0; } }
+@keyframes nova-shell { 0%, 10% { transform: scale(0.2); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: scale(9); opacity: 0; } }
+
+/* Marigold petals for Día de Muertos, the last days of October to Nov 2. */
+.petals { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+.petal {
+  position: absolute; top: -30px; width: 13px; height: 20px;
+  background: linear-gradient(160deg, #ffd166, #f4b223 45%, #e07b12);
+  border-radius: 60% 60% 55% 55% / 80% 80% 30% 30%;
+  opacity: 0.85; animation: petal-fall linear infinite;
+}
+@keyframes petal-fall {
+  0% { transform: translate(0, -5vh) rotate(0deg); }
+  50% { transform: translate(6vw, 52vh) rotate(200deg); }
+  100% { transform: translate(-3vw, 108vh) rotate(420deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc .chart { transition: none; }
+  .nova, .petals { display: none; }
+}

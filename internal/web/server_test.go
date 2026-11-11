@@ -118,7 +118,7 @@ func TestAbout(t *testing.T) {
 		t.Errorf("expected body to contain 'Contact'; got body: %s", body)
 	}
 
-	expectedImage := "spicy.jpg"
+	expectedImage := "profile.jpg"
 	if !strings.Contains(body, expectedImage) {
 		t.Errorf("expected body to contain image '%s'; got body snippet: %s", expectedImage, body[:200])
 	}
@@ -280,4 +280,45 @@ func (s *mockPortfolioServiceWithPhoto) GetCategory(name string) (portfolio.Cate
 		return portfolio.Category{Name: "TestCat", Images: []portfolio.Image{{Path: "/assets/portfolio/TestCat/p1", Ext: ".jpg"}}}, nil
 	}
 	return portfolio.Category{}, portfolio.ErrCategoryNotFound
+}
+
+func TestJourneyPages(t *testing.T) {
+	cfg := testServerConfig(t)
+	cfg.JourneysPath = "../../content/journeys"
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, cfg)
+
+	cases := []struct {
+		path string
+		code int
+		want string
+	}{
+		{"/journeys", http.StatusOK, "Road Trip 2020"},
+		{"/journeys/road-trip-2020", http.StatusOK, "Devils Tower"},
+		{"/journeys/nope", http.StatusNotFound, ""},
+	}
+	for _, c := range cases {
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, httptest.NewRequest("GET", c.path, nil))
+		if rec.Code != c.code {
+			t.Errorf("%s: want %d, got %d", c.path, c.code, rec.Code)
+		}
+		if c.want != "" && !strings.Contains(rec.Body.String(), c.want) {
+			t.Errorf("%s: body does not contain %q", c.path, c.want)
+		}
+	}
+}
+
+// The site has one theme. The old switch and its second theme are gone.
+func TestNoThemeSwitch(t *testing.T) {
+	srv := NewServer(blog.NewMemoryService(), &mockPortfolioService{}, testServerConfig(t))
+	for _, path := range []string{"/", "/about", "/blog"} {
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		body := rec.Body.String()
+		for _, gone := range []string{"rhcp", "Switch Theme", "data-theme"} {
+			if strings.Contains(body, gone) {
+				t.Errorf("%s still contains %q", path, gone)
+			}
+		}
+	}
 }

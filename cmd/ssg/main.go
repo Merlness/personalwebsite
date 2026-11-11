@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"personalwebsite/internal/blog"
+	"personalwebsite/internal/journey"
 	"personalwebsite/internal/portfolio"
 	"personalwebsite/internal/web/components"
 )
@@ -99,6 +100,27 @@ func generateBlog(out string, bService blog.Service) error {
 	return nil
 }
 
+func generateJourneys(out string, jService journey.Service) error {
+	journeys, err := jService.All()
+	if err != nil {
+		return fmt.Errorf("loading journeys: %w", err)
+	}
+
+	err = renderPage(filepath.Join(out, "journeys", "index.html"), components.JourneyList(journeys).Render)
+	if err != nil {
+		return err
+	}
+
+	for _, trip := range journeys {
+		pagePath := filepath.Join(out, "journeys", trip.Slug, "index.html")
+		if err := renderPage(pagePath, components.JourneyPage(trip).Render); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func copyDir(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -153,6 +175,7 @@ func main() {
 	fatal(generateAbout(outputDir))
 	fatal(generatePortfolio(outputDir, portfolioService, blogService))
 	fatal(generateBlog(outputDir, blogService))
+	fatal(generateJourneys(outputDir, journey.NewFilesystemService("content/journeys", "/assets/portfolio")))
 
 	fatal(copyDir("static", outputDir))
 	fatal(copyDir("internal/assets", filepath.Join(outputDir, "assets")))

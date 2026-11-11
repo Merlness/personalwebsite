@@ -32,7 +32,7 @@ func Layout(title string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" class=\"h-full\" x-data=\"{ theme: localStorage.getItem('theme') || 'default' }\" :data-theme=\"theme === 'default' ? '' : theme\" x-effect=\"localStorage.setItem('theme', theme)\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" class=\"h-full\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,20 +45,20 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script>document.documentElement.setAttribute(\"data-theme\", localStorage.getItem(\"theme\") === \"rhcp\" ? \"rhcp\" : \"\");</script><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap\" rel=\"stylesheet\"><link href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&display=swap\" rel=\"stylesheet\"><link href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 templ.SafeURL
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(fmt.Sprintf("/assets/css/output.css?v=%d", time.Now().Unix()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 17, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 16, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" rel=\"stylesheet\"><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js\"></script><script type=\"module\" src=\"/assets/js/pretext-init.js\"></script><script defer src=\"/assets/js/pretext-blog.js\"></script><script defer src=\"/assets/js/pretext-shrinkwrap.js\"></script><script defer src=\"/assets/js/pretext-hover.js\"></script></head><body class=\"h-full flex flex-col transition-colors duration-300\"><header class=\"p-6\"><nav class=\"container mx-auto flex justify-between items-center flex-wrap gap-4 md:gap-0\"><div class=\"text-2xl font-serif tracking-wider\" style=\"color: var(--color-text-primary);\"><a href=\"/\" class=\"hover:opacity-70 transition-opacity\">MERL MARTIN</a></div><div class=\"space-x-4 md:space-x-8 text-xs md:text-sm uppercase tracking-widest flex items-center flex-wrap gap-y-2\" style=\"color: var(--color-text-secondary);\"><a href=\"/\" class=\"hover:opacity-70 transition-opacity\">Home</a> <a href=\"/about\" class=\"hover:opacity-70 transition-opacity\">About</a> <a href=\"/portfolio\" class=\"hover:opacity-70 transition-opacity\">Portfolio</a> <a href=\"/blog\" class=\"hover:opacity-70 transition-opacity\">Blog</a> <button @click=\"theme = theme === 'default' ? 'rhcp' : 'default'\" class=\"hover:opacity-70 transition-opacity cursor-pointer text-xl ml-2\" title=\"Switch Theme\"><span x-text=\"theme === 'rhcp' ? '☀️' : '🌶️'\"></span></button></div></nav></header><main class=\"flex-grow container mx-auto px-6 py-12\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" rel=\"stylesheet\"><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js\"></script><script type=\"module\" src=\"/assets/js/pretext-init.js\"></script><script defer src=\"/assets/js/pretext-blog.js\"></script><script defer src=\"/assets/js/pretext-shrinkwrap.js\"></script><script defer src=\"/assets/js/pretext-hover.js\"></script><script defer src=\"/assets/js/site.js\"></script></head><body class=\"h-full flex flex-col transition-colors duration-300\"><header class=\"p-6\"><nav class=\"container mx-auto flex justify-between items-center flex-wrap gap-4 md:gap-0\"><div class=\"text-2xl font-serif tracking-wider\" style=\"color: var(--color-text-primary);\"><a href=\"/#cover\" id=\"brand\" class=\"hover:opacity-70 transition-opacity\">MERL MARTIN</a></div><div class=\"space-x-4 md:space-x-8 text-xs md:text-sm uppercase tracking-widest flex items-center flex-wrap gap-y-2\" style=\"color: var(--color-text-secondary);\"><a href=\"/\" class=\"hover:opacity-70 transition-opacity\">Home</a> <a href=\"/about\" class=\"hover:opacity-70 transition-opacity\">About</a> <a href=\"/portfolio\" class=\"hover:opacity-70 transition-opacity\">Portfolio</a> <a href=\"/blog\" class=\"hover:opacity-70 transition-opacity\">Blog</a> <a href=\"/journeys\" class=\"hover:opacity-70 transition-opacity\">Journeys</a></div></nav></header><main class=\"flex-grow container mx-auto px-6 py-12\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

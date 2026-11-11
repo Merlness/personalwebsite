@@ -21,7 +21,8 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        serif: ['Merriweather', 'serif'],
+        serif: ['Fraunces', 'Georgia', 'serif'],
+        mono: ['DM Mono', 'ui-monospace', 'Menlo', 'monospace'],
       },
     },
   },

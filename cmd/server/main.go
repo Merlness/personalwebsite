@@ -18,6 +18,7 @@ func main() {
 		PortfolioAssetsPath: config.ResolvePortfolioRoot(),
 		AboutmeAssetsPath:   config.ResolveAboutmeRoot(),
 		CSSAssetsPath:       "internal/assets",
+		JourneysPath:        "content/journeys",
 	}
 
 	server := web.NewServer(blogService, portfolioService, serverConfig)

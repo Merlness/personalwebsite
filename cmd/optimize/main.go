@@ -83,7 +83,7 @@ func optimizeDir(sourceDir, destDir string, quality int) {
 			fmt.Printf("Processing %s (%s)... ", relPath, target.suffix)
 
 			// Open image (only once ideally, but simple loop here)
-			src, err := imaging.Open(path)
+			src, err := imaging.Open(path, imaging.AutoOrientation(true))
 			if err != nil {
 				fmt.Printf("Failed to open: %v\n", err)
 				return nil

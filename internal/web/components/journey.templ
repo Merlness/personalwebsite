@@ -1,0 +1,191 @@
+package components
+
+import (
+	"fmt"
+	"personalwebsite/internal/journey"
+)
+
+func journeyVars(p journey.Palette) string {
+	return fmt.Sprintf("--jr-paper:%s;--jr-ink:%s;--jr-accent:%s;--jr-accent2:%s;", p.Paper, p.Ink, p.Accent, p.Accent2)
+}
+
+func milesLabel(j journey.Journey) string {
+	if j.Measured {
+		return "Miles on the odometer"
+	}
+	return "Miles, about"
+}
+
+func milesPhrase(j journey.Journey) string {
+	if j.Measured {
+		return commas(j.Miles) + " miles on the odometer"
+	}
+	return "about " + commas(j.Miles) + " miles"
+}
+
+func commas(n int) string {
+	s := fmt.Sprintf("%d", n)
+	if len(s) <= 3 {
+		return s
+	}
+	return s[:len(s)-3] + "," + s[len(s)-3:]
+}
+
+templ JourneyList(journeys []journey.Journey) {
+	@Layout("Journeys | Merl Martin") {
+		<div class="space-y-12 px-4 md:px-0">
+			<div class="text-center space-y-4">
+				<h1 class="text-4xl font-serif" style="color: var(--color-text-primary);">Journeys</h1>
+				<div class="h-1 w-24 mx-auto" style="background-color: var(--color-border);"></div>
+				<p class="max-w-2xl mx-auto" style="color: var(--color-text-secondary);">
+					Trips you can follow on a map, stop by stop.
+				</p>
+			</div>
+			<div class="max-w-3xl mx-auto space-y-12">
+				if len(journeys) == 0 {
+					<p class="text-center" style="color: var(--color-text-secondary);">No journeys yet.</p>
+				}
+				for _, j := range journeys {
+					<article class="border-b pb-8 last:border-0" style="border-color: var(--color-border);">
+						<div class="space-y-3">
+							<div class="text-xs font-mono uppercase tracking-widest" style="color: var(--color-text-secondary);">
+								{ j.DateRange() } · { fmt.Sprintf("%d stops", len(j.Stops)) } · { milesPhrase(j) }
+							</div>
+							<h2 class="text-2xl font-serif hover:opacity-70 transition-opacity" style="color: var(--color-text-primary);">
+								<a href={ templ.SafeURL("/journeys/" + j.Slug) }>{ j.Title }</a>
+							</h2>
+							<p style="color: var(--color-text-secondary);">{ j.Summary }</p>
+						</div>
+					</article>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ JourneyPage(j journey.Journey) {
+	@Layout(j.Title + " | Merl Martin") {
+		<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&display=swap" rel="stylesheet"/>
+		<link href="/assets/css/journey.css" rel="stylesheet"/>
+		<div class="jr" style={ journeyVars(j.Palette) } data-route-len={ fmt.Sprintf("%.1f", j.RouteLen) }>
+			<div class="jr-sky" aria-hidden="true">
+				<div class="jr-comet"></div>
+			</div>
+			<header class="jr-hero">
+				<p class="jr-eyebrow">{ j.DateRange() }</p>
+				<h1 class="jr-title">{ j.Title }</h1>
+				<p class="jr-sub">{ j.Subtitle }</p>
+				<dl class="jr-facts">
+					<div><dt>Days</dt><dd>{ fmt.Sprintf("%d", j.Days) }</dd></div>
+					<div><dt>{ milesLabel(j) }</dt><dd>{ commas(j.Miles) }</dd></div>
+					<div><dt>States</dt><dd>{ fmt.Sprintf("%d", j.States) }</dd></div>
+					<div><dt>Stops</dt><dd>{ fmt.Sprintf("%d", len(j.Stops)) }</dd></div>
+					for _, st := range j.Stats {
+						<div><dt>{ st.Label }</dt><dd>{ st.Value }</dd></div>
+					}
+					if j.HighFt > 0 {
+						<div><dt>{ "High point, " + j.HighName }</dt><dd>{ commas(j.HighFt) } ft</dd></div>
+					}
+				</dl>
+				<div class="jr-intro">
+					@templ.Raw(j.Intro)
+				</div>
+				<p class="jr-begin">Scroll to drive</p>
+			</header>
+			<div class="jr-body">
+				<aside class="jr-mapwrap" aria-label="Route map">
+					<div class="jr-hud">
+						<div class="jr-ctr"><span class="jr-num" data-jr="miles">0</span><span class="jr-lab">miles driven</span></div>
+						<div class="jr-ctr"><span class="jr-num" data-jr="elev">0</span><span class="jr-lab">feet up</span></div>
+						<div class="jr-ctr"><span class="jr-num" data-jr="day">1</span><span class="jr-lab">day of { fmt.Sprintf("%d", j.Days) }</span></div>
+					</div>
+					<div class="jr-map">
+						<svg viewBox={ j.Map.ViewBox() } role="img" aria-label={ "Map of the route for " + j.Title } preserveAspectRatio="xMidYMid meet">
+							<g class="jr-cam">
+								<g class="jr-land">
+									for _, b := range j.Map.Borders {
+										<path class="jr-border" d={ b }></path>
+									}
+									for _, o := range j.Map.Outline {
+										<path class="jr-coast" d={ o }></path>
+									}
+								</g>
+								for _, l := range j.Map.Labels {
+									<text class="jr-state" x={ fmt.Sprintf("%.1f", l.X) } y={ fmt.Sprintf("%.1f", l.Y) }>{ l.Text }</text>
+								}
+								<path class="jr-ghost" d={ j.RoutePath }></path>
+								<path class="jr-route" d={ j.RoutePath }></path>
+								for _, s := range j.Stops {
+									<g class="jr-dot" data-i={ fmt.Sprintf("%d", s.Index) } transform={ fmt.Sprintf("translate(%.1f %.1f)", s.X, s.Y) }>
+										<circle class="jr-ring" r="9"></circle>
+										<circle class="jr-pt" r="2.6"></circle>
+										if journeyIcon(s.Icon) != "" {
+											<g class="jr-icon">
+												<g transform="translate(-13.2 -30) scale(1.1)">
+													@templ.Raw(journeyIcon(s.Icon))
+												</g>
+											</g>
+										}
+										<text class="jr-label" x="7" y="10">{ s.Name }</text>
+									</g>
+								}
+								<circle class="jr-pen" r="4"></circle>
+							</g>
+							<g class="jr-furniture">
+								<path d="M22 30 v-14 l-4 6 M22 16 l4 6"></path>
+								<text x="30" y="26">N</text>
+							</g>
+						</svg>
+					</div>
+					<p class="jr-mapnote">
+						Miles between stops are estimates. Heights are about.
+						if j.RouteCredit != "" {
+							{ " Roads: © OpenStreetMap contributors." }
+						}
+					</p>
+				</aside>
+				<div class="jr-stops">
+					for _, s := range j.Stops {
+						if s.Chapter != "" {
+							<h2 class="jr-chapter">{ s.Chapter }</h2>
+						}
+						<section
+							class="jr-stop"
+							data-i={ fmt.Sprintf("%d", s.Index) }
+							data-len={ fmt.Sprintf("%.1f", s.PathLen) }
+							data-miles={ fmt.Sprintf("%d", s.Miles) }
+							data-elev={ fmt.Sprintf("%d", s.ElevFt) }
+							data-day={ fmt.Sprintf("%d", s.Day) }
+							data-scene={ s.Scene }
+							data-paper={ s.Theme.Paper }
+							data-ink={ s.Theme.Ink }
+							data-accent={ s.Theme.Accent }
+						>
+							<p class="jr-eyebrow">{ s.DateLabel } · Day { fmt.Sprintf("%d", s.Day) }</p>
+							<h3 class="jr-name">{ s.Name }</h3>
+							<p class="jr-region">{ s.Region }</p>
+							<p class="jr-note">{ s.Note }</p>
+							if len(s.PhotoURLs) > 0 {
+								<div class={ "jr-photos", templ.KV("jr-photos-2", len(s.PhotoURLs) > 1) }>
+									for _, p := range s.PhotoURLs {
+										<a class="jr-photo" href={ templ.SafeURL(p.Full) } target="_blank" rel="noopener">
+											<img src={ p.Full } alt={ s.Name + ", " + s.Region } loading="lazy"/>
+										</a>
+									}
+								</div>
+							}
+						</section>
+					}
+					<section class="jr-end">
+						<h2 class="jr-chapter">Back</h2>
+						<p class="jr-note">{ fmt.Sprintf("%d days, %d stops, %d states, and %s.", j.Days, len(j.Stops), j.States, milesPhrase(j)) }</p>
+						if j.Gallery != "" {
+							<a class="jr-btn" href={ templ.SafeURL("/portfolio/" + j.Gallery) }>See every photo from the trip</a>
+						}
+					</section>
+				</div>
+			</div>
+		</div>
+		<script defer src="/assets/js/journey.js"></script>
+	}
+}

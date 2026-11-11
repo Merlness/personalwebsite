@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"personalwebsite/internal/blog"
+	"personalwebsite/internal/journey"
 	"personalwebsite/internal/portfolio"
 	"personalwebsite/internal/web/components"
 	"strings"
@@ -12,10 +13,12 @@ type ServerConfig struct {
 	PortfolioAssetsPath string
 	AboutmeAssetsPath   string
 	CSSAssetsPath       string
+	JourneysPath        string
 }
 
 func NewServer(blogService blog.Service, portfolioService portfolio.Service, serverConfig ServerConfig) http.Handler {
 	mux := http.NewServeMux()
+	journeyService := journey.NewFilesystemService(serverConfig.JourneysPath, "/assets/portfolio")
 	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/" {
 			http.NotFound(writer, request)
@@ -97,6 +100,28 @@ func NewServer(blogService blog.Service, portfolioService portfolio.Service, ser
 		}
 
 		components.BlogPost(post, prevPost, nextPost).Render(request.Context(), writer)
+	})
+
+	mux.HandleFunc("GET /journeys", func(writer http.ResponseWriter, request *http.Request) {
+		journeys, err := journeyService.All()
+		if err != nil {
+			http.Error(writer, "Failed to load journeys", http.StatusInternalServerError)
+			return
+		}
+		components.JourneyList(journeys).Render(request.Context(), writer)
+	})
+
+	mux.HandleFunc("GET /journeys/{slug}", func(writer http.ResponseWriter, request *http.Request) {
+		trip, err := journeyService.Get(request.PathValue("slug"))
+		if err != nil {
+			if err == journey.ErrNotFound {
+				http.NotFound(writer, request)
+				return
+			}
+			http.Error(writer, "Failed to load journey", http.StatusInternalServerError)
+			return
+		}
+		components.JourneyPage(trip).Render(request.Context(), writer)
 	})
 
 	imageHandler := NewImageHandler(serverConfig.PortfolioAssetsPath)

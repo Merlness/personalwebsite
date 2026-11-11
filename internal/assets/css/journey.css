@@ -1,0 +1,425 @@
+/* Journey page: a scroll-driven route map. Each trip sets its own colors
+   through --jr-paper, --jr-ink, --jr-accent, --jr-accent2 on .jr. */
+
+html:has(.jr) { overflow-x: clip; }
+
+/* Registered as colors so the theme can blend from one stop to the next. */
+@property --jr-paper { syntax: "<color>"; inherits: true; initial-value: #efe6d6; }
+@property --jr-ink { syntax: "<color>"; inherits: true; initial-value: #1f2a2e; }
+@property --jr-accent { syntax: "<color>"; inherits: true; initial-value: #c4572a; }
+
+.jr {
+  --p: var(--jr-paper, #efe6d6);
+  --k: var(--jr-ink, #1f2a2e);
+  --a: var(--jr-accent, #c4572a);
+  --a2: var(--jr-accent2, #2f6f73);
+  --display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
+  --serif: "Fraunces", Georgia, serif;
+  position: relative;
+  width: 100vw;
+  margin: -3rem 0 -3rem calc(50% - 50vw);
+  background: var(--p);
+  color: var(--k);
+  transition: --jr-paper 1.4s ease, --jr-ink 1.4s ease, --jr-accent 1.4s ease, background-color 0.9s ease, color 0.9s ease;
+}
+
+.jr.jr-night {
+  --p: #0b1220;
+  --k: #ece6d8;
+  --a: #f0b45a;
+}
+
+.jr > * { position: relative; z-index: 1; }
+
+/* ---------- night scene ---------- */
+
+.jr-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 27% 62%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 41% 31%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 66% 74%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 79% 44%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 21%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 93% 83%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 6% 86%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 35% 90%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 49% 55%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 8%, #fff 50%, transparent 51%),
+    linear-gradient(to top, rgba(240, 150, 70, 0.22), transparent 38%);
+}
+
+.jr-night .jr-sky { opacity: 1; }
+
+.jr-comet {
+  position: absolute;
+  left: 14%;
+  top: 26%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.8);
+  transform: translate(-60px, 40px);
+  transition: transform 2.4s ease-out;
+}
+
+.jr-comet::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  width: 150px;
+  height: 46px;
+  transform-origin: 0 100%;
+  transform: rotate(-58deg);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.75), rgba(190, 215, 255, 0.18) 55%, transparent);
+  clip-path: polygon(0 100%, 100% 0, 100% 70%);
+}
+
+.jr-night .jr-comet { transform: none; }
+
+/* ---------- hero ---------- */
+
+.jr-hero {
+  min-height: 88vh;
+  padding: 12vh 6vw 8vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.jr-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--a);
+  margin: 0;
+}
+
+.jr-title {
+  font-family: var(--display);
+  font-size: clamp(4.2rem, 17vw, 15rem);
+  line-height: 0.86;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--k);
+}
+
+.jr-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2.4vw, 2rem);
+  max-width: 34ch;
+  margin: 0;
+}
+
+.jr-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--k) 35%, transparent);
+  max-width: 44rem;
+}
+
+.jr-facts dt {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.jr-facts dd {
+  font-family: var(--display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1;
+  margin: 0.2rem 0 0;
+}
+
+.jr-intro {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  max-width: 58ch;
+  opacity: 0.88;
+}
+
+.jr-begin {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--a);
+  margin: 1rem 0 0;
+}
+
+.jr-begin::after { content: "  \2193"; }
+
+/* ---------- body: stops and sticky map ---------- */
+
+.jr-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 0 4vw;
+  padding: 0 6vw;
+  align-items: start;
+}
+
+.jr-stops { grid-column: 1; grid-row: 1; padding-bottom: 20vh; }
+
+.jr-mapwrap {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 1.5rem 0;
+}
+
+.jr-hud {
+  display: flex;
+  gap: 2rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--k) 35%, transparent);
+  padding-bottom: 0.75rem;
+}
+
+.jr-ctr { display: flex; flex-direction: column; min-width: 0; }
+
+.jr-num {
+  font-family: var(--display);
+  font-size: clamp(1.9rem, 3.6vw, 3.4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.jr-lab {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-top: 0.3rem;
+}
+
+.jr-map {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid color-mix(in srgb, var(--k) 45%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--k) 18%, transparent);
+  outline-offset: 5px;
+  background: color-mix(in srgb, var(--k) 4%, var(--p));
+  overflow: hidden;
+  transition: background-color 0.9s ease;
+}
+
+.jr-map svg { width: 100%; height: 100%; display: block; }
+
+.jr-mapnote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.8rem;
+  opacity: 0.65;
+  margin: 0.4rem 0 0;
+}
+
+.jr-cam { transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+.jr-border, .jr-coast, .jr-ghost, .jr-route {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jr-border { stroke: var(--k); stroke-width: 1; opacity: 0.28; }
+.jr-coast { stroke: var(--k); stroke-width: 2.2; opacity: 0.9; }
+.jr-ghost { stroke: var(--k); stroke-width: 1.2; stroke-dasharray: 1 5; opacity: 0.4; }
+/* The route is drawn with a dash offset, and dashes follow screen pixels under
+   non-scaling-stroke. So the route alone scales with the map. */
+.jr-route { stroke: var(--a); stroke-width: 2.4; vector-effect: none; }
+
+.jr-state {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  fill: var(--k);
+  opacity: 0.3;
+  text-anchor: middle;
+}
+
+.jr-pt { fill: var(--k); opacity: 0.35; transition: opacity 0.4s; }
+.jr-dot.is-done .jr-pt { opacity: 1; }
+.jr-ring { fill: none; stroke: var(--a); stroke-width: 2; vector-effect: non-scaling-stroke; opacity: 0; transition: opacity 0.4s; }
+.jr-dot.is-active .jr-ring { opacity: 0.55; }
+
+.jr-label {
+  font-family: var(--display);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: var(--k);
+  stroke: var(--p);
+  stroke-width: 2.5px;
+  paint-order: stroke;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.jr-dot.is-active .jr-label { opacity: 1; }
+
+/* Sketch icons: each one pops up when the route comes near its stop, and
+   stays, so the map fills in as the trip goes on. */
+.jr-icon {
+  transform: scale(0);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  opacity: 0;
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+.jr-dot.is-seen .jr-icon { transform: scale(1); opacity: 1; }
+.jr-icon path, .jr-icon ellipse, .jr-icon circle {
+  fill: var(--p);
+  stroke: var(--k);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.jr-icon .l { fill: none; }
+.jr-icon .f { fill: var(--a); }
+.jr-icon .w { fill: color-mix(in srgb, var(--a2) 55%, var(--p)); }
+
+.jr-pen { fill: var(--a); stroke: var(--p); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+.jr-furniture path { fill: none; stroke: var(--k); stroke-width: 1.5; }
+.jr-furniture text { font-family: var(--mono); font-size: 11px; fill: var(--k); }
+
+/* ---------- stops ---------- */
+
+.jr-chapter {
+  font-family: var(--display);
+  font-size: clamp(4.5rem, 13vw, 11rem);
+  line-height: 0.85;
+  text-transform: uppercase;
+  color: var(--a);
+  margin: 22vh 0 0;
+}
+
+.jr-stop {
+  min-height: 82vh;
+  padding: 12vh 0 6vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55rem;
+  opacity: 0.32;
+  transition: opacity 0.5s ease;
+}
+
+.jr-stop.is-active { opacity: 1; }
+
+.jr-name {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 5.2vw, 4.6rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  margin: 0.3rem 0 0;
+  color: var(--k);
+}
+
+.jr-region {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  opacity: 0.75;
+}
+
+.jr-note {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  line-height: 1.6;
+  max-width: 42ch;
+  margin: 0.6rem 0 0.8rem;
+}
+
+.jr-photos { display: grid; gap: 1rem; max-width: 52rem; }
+.jr-photos-2 { grid-template-columns: 1fr 1fr; max-width: 60rem; }
+
+.jr-photo {
+  display: block;
+  background: #fbf7ef;
+  padding: 0.6rem 0.6rem 2rem;
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.5);
+  transform: rotate(-1.2deg);
+  transition: transform 0.35s ease;
+}
+
+.jr-photos .jr-photo:nth-child(2n) { transform: rotate(1.4deg) translateY(1.2rem); }
+.jr-photo:hover { transform: rotate(0) scale(1.02); }
+.jr-photo img { display: block; width: 100%; height: auto; }
+
+/* Portrait photos: keep the whole frame on screen. */
+.jr-photo { width: fit-content; max-width: 100%; }
+.jr-photo img { width: auto; max-width: 100%; max-height: 82vh; }
+.jr-photos-2 { align-items: start; }
+
+.jr-end { padding: 6vh 0 10vh; }
+
+.jr-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--p);
+  background: var(--k);
+  padding: 0.9rem 1.4rem;
+  border-radius: 999px;
+}
+
+/* ---------- phone ---------- */
+
+@media (max-width: 860px) {
+  .jr-hero { padding: 9vh 16px 6vh; min-height: 80vh; }
+  .jr-body { display: block; padding: 0 16px; }
+  .jr-mapwrap {
+    height: 46vh;
+    z-index: 5;
+    margin: 0 -16px;
+    padding: 0.6rem 16px 0.7rem;
+    background: var(--p);
+    box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.6);
+    gap: 0.5rem;
+    transition: background-color 0.9s ease;
+  }
+  .jr-hud { gap: 1.2rem; padding-bottom: 0.45rem; }
+  .jr-num { font-size: 1.7rem; }
+  .jr-lab { font-size: 0.56rem; }
+  .jr-mapnote { display: none; }
+  .jr-map { outline: none; }
+  .jr-stop { min-height: 60vh; padding: 8vh 0 4vh; }
+  .jr-chapter { margin-top: 12vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jr, .jr-cam, .jr-stop, .jr-sky, .jr-comet, .jr-photo, .jr-map, .jr-icon { transition: none; }
+}
