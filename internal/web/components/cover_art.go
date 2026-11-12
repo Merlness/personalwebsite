@@ -12,6 +12,8 @@ var assetVersion = fmt.Sprint(time.Now().Unix())
 // coverAperture is the "First light" button on the home cover: a six-blade
 // camera aperture that opens on the stars. Drawn in a design pass on
 // 2026-11-11. Each blade is a ".blade" group, so CSS can swing it open.
+// The rim is drawn as rings, not discs, and the dark ".well" behind the blades
+// can fade: then the blades open on the real star chart.
 const coverAperture = `<svg class="aperture" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
   <defs>
     <path id="blade" d="M76 58.43H124C135.86 48.12 149.12 45.08 161.89 46.2A82 82 0 0 0 84.35 19.5C77 30 73 43 76 58.43Z"/>
@@ -23,9 +25,12 @@ const coverAperture = `<svg class="aperture" xmlns="http://www.w3.org/2000/svg" 
     </clipPath>
   </defs>
 
-  <circle cx="100" cy="100" r="96" fill="#0d1230" stroke="#f3e9d2" stroke-width="1.25" stroke-opacity=".78"/>
-  <circle cx="100" cy="100" r="92" fill="#151a36" stroke="#f3e9d2" stroke-width=".65" stroke-opacity=".34"/>
-  <circle cx="100" cy="100" r="85" fill="#04060e" stroke="#f3e9d2" stroke-width=".75" stroke-opacity=".5"/>
+  <circle class="well" cx="100" cy="100" r="85" fill="#04060e"/>
+  <circle cx="100" cy="100" r="88.8" fill="none" stroke="#0d1230" stroke-width="14.6"/>
+  <circle cx="100" cy="100" r="88.5" fill="none" stroke="#151a36" stroke-width="7"/>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="#f3e9d2" stroke-width="1.25" stroke-opacity=".78"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#f3e9d2" stroke-width=".65" stroke-opacity=".34"/>
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#f3e9d2" stroke-width=".75" stroke-opacity=".5"/>
   <g>
     <use href="#index"/>
     <use href="#index" transform="rotate(60 100 100)"/>

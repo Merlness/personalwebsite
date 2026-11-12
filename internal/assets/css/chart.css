@@ -21,6 +21,9 @@
   --first-light-duration: 620ms;
   position: fixed; inset: 0; z-index: 60;
   display: grid; place-items: center; text-align: center;
+}
+.sc-cover::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
   background: radial-gradient(circle at 50% 45%, #0e1330 0, var(--deep) 62%);
 }
 .sc-cover-inner { padding: 24px; max-width: 40rem; }
@@ -42,37 +45,12 @@
    hover, and wide open on the click. */
 .lens .blade { transition: transform 0.7s cubic-bezier(0.6, 0, 0.2, 1); }
 .lens-button:hover .blade, .lens-button:focus-visible .blade { transform: translateY(-5px); }
-html.sc-open .lens .blade { transform: translateY(-34px); }
 @media (prefers-reduced-motion: reduce) { .lens .blade { transition: none; } }
 @media (hover: hover) {
   .lens-button:hover .lens { transform: translateY(-2px); }
   .lens-button:hover .lens-label { color: var(--paper); }
 }
 .lens-button:active .lens { transform: scale(0.98); }
-.lens-shutter {
-  position: absolute;
-  inset: 17%;
-  border-radius: 50%;
-  overflow: hidden;
-}
-.lens-shutter::before, .lens-shutter::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  height: calc(50% + 1px);
-  transform: translateY(var(--shutter-rest));
-}
-.lens-shutter::before {
-  --shutter-rest: -100%;
-  top: 0;
-  background: #151a36;
-}
-.lens-shutter::after {
-  --shutter-rest: 100%;
-  bottom: 0;
-  background: #0d1230;
-  box-shadow: inset 0 1px var(--faint);
-}
 .sc-cover h1 { font-weight: 300; font-size: clamp(2.6rem, 9vw, 5.5rem); line-height: 0.95; margin: 0.6rem 0 0.8rem; letter-spacing: -0.01em; }
 .sc-cover h1 em { font-weight: 400; color: var(--marigold); }
 .sc-cover p { color: var(--dim); font-size: 1.05rem; margin: 0 auto 1.6rem; max-width: 30ch; }
@@ -84,30 +62,24 @@ html.sc-open .lens .blade { transform: translateY(-34px); }
 .btn:hover { background: #ffc94a; }
 .btn:focus-visible, a:focus-visible { outline: 2px solid var(--pink); outline-offset: 4px; }
 .skip { display: block; margin-top: 1.2rem; color: var(--dim); }
-html.sc-open .lens-shutter::before, html.sc-open .lens-shutter::after {
-  animation: first-light-shutter var(--first-light-duration) both;
-}
-html.sc-open .sc-cover {
-  animation: first-light-reveal var(--first-light-duration) ease-out both;
-  pointer-events: none;
+/* First light. The chart stays hidden until the aperture sits on it: the
+   blades close, the aperture travels and grows to the chart ring, the cover
+   gets a round hole under the rim, and the blades open on the real chart. */
+html.sc-closing .lens .blade { transform: translateY(33px); transition: transform 0.28s cubic-bezier(0.4, 0, 1, 1); }
+html.sc-open .lens .blade { transform: translateY(-34px); transition: transform 0.52s cubic-bezier(0.2, 0.8, 0.2, 1); }
+html.sc-going .sc-cover { pointer-events: none; }
+.sc-cover-inner > :not(.lens-button), .lens-label { transition: opacity 0.3s ease; }
+html.sc-going .sc-cover-inner > :not(.lens-button), html.sc-going .lens-label { opacity: 0; }
+.aperture .well, .aperture .star-field { transition: opacity 0.25s ease; }
+html.sc-going .aperture .well, html.sc-going .aperture .star-field { opacity: 0; }
+html.sc-going .lens, html.sc-going .lens-button:hover .lens { transition: none; }
+.sc-cover::before { transition: opacity 0.55s ease 0.1s; }
+html.sc-hole .sc-cover::before {
+  opacity: 0;
+  -webkit-mask: radial-gradient(circle at var(--hx) var(--hy), transparent calc(var(--hr) - 1px), #000 var(--hr));
+  mask: radial-gradient(circle at var(--hx) var(--hy), transparent calc(var(--hr) - 1px), #000 var(--hr));
 }
 html.sc-seen .sc-cover { display: none; }
-@keyframes first-light-shutter {
-  0% {
-    transform: translateY(var(--shutter-rest));
-    animation-timing-function: cubic-bezier(0.4, 0, 0.65, 1);
-  }
-  21% { transform: translateY(0); }
-  32% {
-    transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.2, 0, 0.3, 1);
-  }
-  100% { transform: translateY(var(--shutter-rest)); }
-}
-@keyframes first-light-reveal {
-  0%, 36% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
-}
 
 /* ---------- the chart ---------- */
 .sc .stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 2vw; align-items: center; padding: 0 0 24px; max-width: 1280px; margin: 0 auto; }
@@ -157,8 +129,6 @@ a.con:focus-visible .hit { stroke: var(--pink); stroke-width: 2; stroke-dasharra
   .field { animation: none; }
   .lens-button:is(:hover, :active) .lens { transform: none; }
   .lens { transition: none; }
-  html.sc-open .lens-shutter::before, html.sc-open .lens-shutter::after { animation: none; }
-  html.sc-open .sc-cover { animation: none; visibility: hidden; }
 }
 
 /* The spice: the Milky Way runs warm, from purple through pink to marigold,
@@ -190,15 +160,14 @@ html.sc-diving { overflow: hidden; }
 /* The short action before a dive. Each lasts about half a second. */
 .act * { transform-box: fill-box; vector-effect: non-scaling-stroke; }
 .act .shutter { fill: var(--deep); stroke: var(--marigold); stroke-width: 2; transform-origin: center; animation: shutter 0.5s ease-in-out both; }
-.act .flash { fill: #fff; transform-origin: center; animation: flash 0.5s ease-out both; }
 @keyframes shutter { 0% { transform: scale(1) rotate(0); fill-opacity: 0; } 45% { transform: scale(0.12) rotate(60deg); fill-opacity: 1; } 100% { transform: scale(1) rotate(0); fill-opacity: 0; } }
-@keyframes flash { 0%, 40% { transform: scale(0.2); opacity: 0; } 55% { transform: scale(2.6); opacity: 0.95; } 100% { transform: scale(3.4); opacity: 0; } }
-.act .climb { fill: none; stroke: var(--marigold); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.4s ease-in forwards; }
-.act .flag { fill: var(--pink); stroke: var(--paper); stroke-width: 1.5; stroke-linejoin: round; transform-origin: 0% 100%; transform: scale(0); animation: pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.34s forwards; }
+.act .climb { fill: none; stroke: var(--marigold); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: miter; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 0.85s cubic-bezier(0.45, 0, 0.55, 1) forwards; }
+.act .climb.glow { stroke: var(--pink); stroke-width: 11; opacity: 0.28; stroke-linejoin: round; }
+.act .flag { fill: var(--pink); stroke: var(--paper); stroke-width: 1.5; stroke-linejoin: round; transform-origin: 0% 100%; transform: scale(0); animation: pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes pop { to { transform: scale(1); } }
-.act .page { fill: rgba(243, 233, 210, 0.22); stroke: var(--marigold); stroke-width: 2; transform-origin: 0% 50%; animation: turn 0.5s ease-in-out both; }
-@keyframes turn { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.02) skewY(-8deg); fill: rgba(243, 233, 210, 0.5); } 100% { transform: scaleX(-1); } }
+.act .page { fill: rgba(243, 233, 210, 0.22); stroke: var(--marigold); stroke-width: 2; transform-origin: 0% 50%; animation: turn 0.5s cubic-bezier(0.35, 0, 0.65, 1) both; }
+@keyframes turn { from { transform: scaleX(1); } to { transform: scaleX(-1); } }
 .act .key { fill: var(--marigold); opacity: 0; animation: key 0.12s steps(1) forwards; }
 .act .key.k1 { animation-delay: 0.14s; } .act .key.k2 { animation-delay: 0.28s; fill: var(--pink); }
 @keyframes key { to { opacity: 1; } }
@@ -230,3 +199,33 @@ html.sc-diving { overflow: hidden; }
   .sc .chart { transition: none; }
   .nova, .petals { display: none; }
 }
+
+/* The shorter dive (all but Tech): the zoom, the fade, and the carried thing
+   start together and end together. */
+.sc.diving.smooth .chart { transform: scale(6); transition: transform 0.72s cubic-bezier(0.4, 0, 0.8, 0.4); }
+html.sc-smooth .sc-fade { transition: opacity 0.42s linear 0.3s; }
+/* About: the screen washes pink to purple, the colors of the mark. */
+html.sc-wash .sc-fade { background: radial-gradient(circle at 50% 45%, #e8467c 0, #6b3fa0 70%, #2a1840 100%); }
+
+/* Photography: one flash grows out of the lens until it covers the screen.
+   One flash only, never a strobe. Readers who ask for less motion get a
+   plain link (see chart.js). */
+.sc-flash {
+  position: fixed; inset: 0; z-index: 90; pointer-events: none; background: #fff6e0; opacity: 0.95;
+  animation: flash-grow 0.34s cubic-bezier(0.3, 0, 0.5, 1) both;
+}
+@keyframes flash-grow { from { clip-path: circle(0 at var(--fx) var(--fy)); } to { clip-path: circle(150vmax at var(--fx) var(--fy)); } }
+
+/* The next page, loaded ahead of time so its layout can be measured. */
+.sc-ahead { position: fixed; left: 0; top: 0; width: 100%; height: 100%; border: 0; visibility: hidden; pointer-events: none; z-index: -1; }
+
+/* The thing that comes along to the next page (see carry in chart.js). */
+.sc-carry { position: fixed; z-index: 70; margin: 0 !important; pointer-events: none; }
+.sc-word { font-family: "Fraunces", Georgia, serif; font-weight: 400; font-size: 36px; color: #f3e9d2; white-space: nowrap; text-align: center; }
+.sc-word .to { animation: word-in 0.4s ease 0.15s both; }
+.sc-word .from {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); line-height: 1;
+  font-family: "DM Mono", ui-monospace, Menlo, monospace; letter-spacing: 0.22em; text-transform: uppercase;
+  animation: word-in 0.4s ease 0.15s both reverse;
+}
+@keyframes word-in { from { opacity: 0; } to { opacity: 1; } }

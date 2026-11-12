@@ -14,18 +14,53 @@
   try { if (sessionStorage.getItem('firstLight')) body.classList.add('sc-seen'); } catch (e) {}
   var openBtn = document.getElementById('sc-open');
   var chartStage = document.getElementById('chart');
-  function open() {
-    if (body.classList.contains('sc-open')) return;
-    body.classList.add('sc-open');
-    try { sessionStorage.setItem('firstLight', '1'); } catch (e) {}
+  // First light. The chart stays hidden until the aperture sits on it:
+  // the blades close, the aperture travels to the middle of the chart and
+  // grows to the size of its ring, and only then do the blades open on the
+  // real chart. The rest of the page fades in around it.
+  var lens = document.querySelector('.sc-cover .lens'), chartSvg = document.querySelector('.sc .chart');
+  var timers = [], steps = ['sc-going', 'sc-closing', 'sc-hole', 'sc-open'];
+  function settle() {
+    body.classList.add('sc-seen');
+    steps.forEach(function (c) { body.classList.remove(c); });
+    if (lens && lens.getAnimations) lens.getAnimations().forEach(function (a) { a.cancel(); });
     chartStage.focus({ preventScroll: true });
+  }
+  function open() {
+    if (body.classList.contains('sc-going') || body.classList.contains('sc-seen')) return;
+    try { sessionStorage.setItem('firstLight', '1'); } catch (e) {}
+    if (calm || !lens || !lens.animate || !chartSvg) { settle(); return; }
+    body.classList.add('sc-going', 'sc-closing');
+    timers = [
+      setTimeout(function () {
+        var l = lens.getBoundingClientRect(), c = chartSvg.getBoundingClientRect();
+        // The outer rim is 96% of the aperture; the outer ring is 94% of the chart.
+        var scale = (c.width * 0.94) / (l.width * 0.96);
+        var cx = c.left + c.width / 2, cy = c.top + c.height / 2;
+        // The cover gets a round hole exactly under the aperture rim.
+        body.style.setProperty('--hx', cx + 'px');
+        body.style.setProperty('--hy', cy + 'px');
+        body.style.setProperty('--hr', (c.width * 0.47 - 4) + 'px');
+        lens.animate([{ transform: 'none' }, { transform: 'translate(' + (cx - l.left - l.width / 2) + 'px,' + (cy - l.top - l.height / 2) + 'px) scale(' + scale + ')' }],
+          { duration: 620, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' });
+      }, 220),
+      setTimeout(function () {
+        body.classList.remove('sc-closing');
+        body.classList.add('sc-hole', 'sc-open');
+        lens.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, delay: 380, easing: 'linear', fill: 'forwards' });
+      }, 880),
+      setTimeout(settle, 1720)
+    ];
   }
   if (openBtn) openBtn.addEventListener('click', open);
 
   // The name in the header goes back to the beginning: the cover closes again.
   function showCover() {
     try { sessionStorage.removeItem('firstLight'); } catch (e) {}
-    body.classList.remove('sc-seen', 'sc-open');
+    timers.forEach(clearTimeout);
+    if (lens && lens.getAnimations) lens.getAnimations().forEach(function (a) { a.cancel(); });
+    body.classList.remove('sc-seen');
+    steps.forEach(function (c) { body.classList.remove(c); });
     window.scrollTo(0, 0);
     if (openBtn) openBtn.focus();
   }
@@ -77,7 +112,7 @@
       data: [['Founder', 'Bennu Systems'], ['Field', 'AI advisory'], ['Base', 'Scottsdale, Arizona']],
       stars: [[630, 640], [585, 695], [630, 750], [700, 625], [670, 765], [740, 640], [785, 695], [740, 750]],
       lines: [[0, 1, 2], [3, 4], [5, 6, 7]], lead: 6, label: [640, 815] },
-    { id: 'about', dive: [548, 428], title: 'About', sub: 'el observador', href: '/about', go: 'Meet the observer →',
+    { id: 'about', dive: [626, 360], title: 'About', sub: 'el observador', href: '/about', go: 'Meet the observer →',
       text: 'Physics teacher turned software craftsman.',
       img: '/assets/aboutme/profile_w600.jpg',
       data: [['Observer', 'Merl Martin'], ['Station', 'Scottsdale, Arizona'], ['Lat, Lon', '33.49° N, 111.93° W']],
@@ -88,6 +123,14 @@
   // Dive in: fly the chart into the clicked shape, then open its page.
   var chart = document.querySelector('.sc .chart'), wrap = document.querySelector('.sc');
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function leave(part) {
+    if (part.href.charAt(0) === '/') { try { sessionStorage.setItem('arrive', part.id); } catch (e) {} }
+    window.location.href = part.href;
+  }
+  // How long the short action runs before the dive starts.
+  var waits = { journeys: 950, journal: 460, about: 480 };
+  // How long the carried thing flies. The Journal rule takes its time.
+  var flights = { journal: 1250 };
   function dive(e, part) {
     if (calm || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; // plain link
     e.preventDefault();
@@ -96,24 +139,144 @@
     var link = e.currentTarget, act = el('g', { class: 'act act-' + part.id }, link);
     (acts[part.id] || function () {})(act, part);
     wrap.classList.add('acting');
+    // Photography does not dive. The shutter closes, and one flash grows out
+    // of the lens until it covers the screen. The portfolio fades in from it.
+    if (part.id === 'photo') {
+      setTimeout(function () {
+        var c = chartSvg.getBoundingClientRect(), flash = document.createElement('div');
+        flash.className = 'sc-flash';
+        flash.style.setProperty('--fx', (c.left + part.dive[0] / 1000 * c.width) + 'px');
+        flash.style.setProperty('--fy', (c.top + part.dive[1] / 1000 * c.height) + 'px');
+        document.body.appendChild(flash);
+      }, 210);
+      setTimeout(function () { leave(part); }, 620);
+      return;
+    }
+    // Tech keeps the long dive. The others use a shorter, smoother one, and
+    // the zoom, the fade, and the carried thing all start together.
+    var smooth = part.id !== 'tech', wait = waits[part.id] || 520;
     setTimeout(function () {
+      if (smooth) { wrap.classList.add('smooth'); body.classList.add('sc-smooth'); }
+      if (part.id === 'about') body.classList.add('sc-wash');
+      if (carries[part.id]) carries[part.id](link, act);
       chart.style.transformOrigin = (part.dive[0] / 10) + '% ' + (part.dive[1] / 10) + '%';
       wrap.classList.add('diving');
       body.classList.add('sc-diving');
-    }, 520);
-    setTimeout(function () { window.location.href = part.href; }, 1400);
+    }, wait);
+    setTimeout(function () { leave(part); }, wait + (smooth ? (flights[part.id] || 740) + 40 : 930));
   }
+
+  // One thing from the chart comes along to the next page, and it flies in a
+  // straight line to the exact place it has there. To know that place, the
+  // next page is loaded ahead of time in a hidden frame the size of the
+  // window, and the target is measured in it. The next page then shows the
+  // target above its fade-in (see html[data-arrive] in input.css), so the
+  // thing never stops or jumps.
+  var frames = {}, targets = { journeys: 'main h1', journal: 'main .h-1.w-24' };
+  if (!calm) {
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        parts.forEach(function (part) {
+          if (!targets[part.id]) return;
+          var f = document.createElement('iframe');
+          f.className = 'sc-ahead';
+          f.setAttribute('aria-hidden', 'true');
+          f.setAttribute('tabindex', '-1');
+          f.src = part.href;
+          document.body.appendChild(f);
+          frames[part.id] = f;
+        });
+      }, 1200);
+    });
+  }
+  function place(id) {
+    try {
+      var doc = frames[id].contentDocument, t = doc.readyState === 'complete' && doc.querySelector(targets[id]);
+      if (!t) return null;
+      var r = t.getBoundingClientRect();
+      return r.width ? { rect: r, style: frames[id].contentWindow.getComputedStyle(t) } : null;
+    } catch (e) { return null; }
+  }
+  var hidden = [];
+  function carry(node, from, to, turn, fadeIn, duration) {
+    node.classList.add('sc-carry');
+    node.style.left = to.left + 'px'; node.style.top = to.top + 'px';
+    node.style.width = to.width + 'px'; node.style.height = to.height + 'px';
+    document.body.appendChild(node);
+    var k = from.width / to.width;
+    var dx = from.left + from.width / 2 - to.left - to.width / 2, dy = from.top + from.height / 2 - to.top - to.height / 2;
+    var frames = [{ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ') rotate(' + (turn || 0) + 'deg)', opacity: fadeIn ? 0 : 1 }];
+    if (duration) {
+      // The long flight: the thing swings out in an arc, grows past its
+      // final size as it unfurls, and settles into place.
+      frames.push({ opacity: 1, offset: 0.2 });
+      frames.push({ transform: 'translate(' + (dx * 0.42 - dy * 0.16) + 'px,' + (dy * 0.42 + dx * 0.16) + 'px) scale(1.3) rotate(' + (-(turn || 0) * 0.5) + 'deg)', offset: 0.62 });
+      frames.push({ transform: 'translate(0, 0) scale(1.08) rotate(0deg)', offset: 0.9 });
+    } else {
+      frames.push({ opacity: 1, offset: 0.3 });
+    }
+    frames.push({ transform: 'none', opacity: 1 });
+    node.animate(frames, { duration: duration || 740, easing: duration ? 'cubic-bezier(0.45, 0, 0.3, 1)' : 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
+    return k;
+  }
+  function hide(node) { node.style.visibility = 'hidden'; hidden.push(node); }
+  var carries = {
+    // The word "Journeys" leaves the chart and becomes the title of the page.
+    journeys: function (link) {
+      var to = place('journeys');
+      if (!to) return;
+      var label = link.querySelector('text'), from = label.getBoundingClientRect();
+      var node = document.createElement('div');
+      node.className = 'sc-word';
+      node.style.fontSize = to.style.fontSize;
+      node.style.lineHeight = to.rect.height + 'px';
+      node.innerHTML = '<span class="to">Journeys</span><span class="from">Journeys</span>';
+      // The title is as wide as its column; the word in it is narrower.
+      var probe = document.createElement('span');
+      probe.className = 'sc-word'; probe.style.cssText = 'position:fixed;visibility:hidden;font-size:' + to.style.fontSize;
+      probe.textContent = 'Journeys'; document.body.appendChild(probe);
+      var wordWidth = probe.getBoundingClientRect().width; probe.remove();
+      var box = { left: to.rect.left + (to.rect.width - wordWidth) / 2, top: to.rect.top, width: wordWidth, height: to.rect.height };
+      var k = carry(node, from, box);
+      node.querySelector('.from').style.fontSize = (15 * chartSvg.getBoundingClientRect().width / 1000 / k) + 'px';
+      hide(label);
+    },
+    // One line of the notebook becomes the rule under the Journal title.
+    journal: function (link) {
+      var to = place('journal');
+      if (!to) return;
+      var lines = link.querySelectorAll('line'), line = lines[lines.length - 1], from = line.getBoundingClientRect();
+      var node = document.createElement('div');
+      node.className = 'h-1 w-24';
+      // The line in the notebook slopes up to the right by about 15 degrees.
+      carry(node, from, to.rect, -14.6, true, flights.journal);
+      line.style.transition = 'opacity 0.25s'; line.style.opacity = 0;
+      hidden.push(line);
+    }
+  };
 
   function pts(part, list) { return list.map(function (i) { return part.stars[i].join(','); }).join(' '); }
   var acts = {
-    // The shutter: the lens closes for an instant and the flash fires.
+    // The shutter: the lens closes. The flash is the whole screen (see dive).
     photo: function (g, part) {
       el('polygon', { class: 'shutter', points: pts(part, [8, 9, 10, 11, 12, 13]) }, g);
-      el('circle', { class: 'flash', cx: part.dive[0], cy: part.dive[1], r: 30 }, g);
     },
-    // A climb: a marigold line runs up the ridge and a flag goes up on top.
+    // A climb: a jagged marigold trail works its way up the ridge, switchback
+    // by switchback, and a flag goes up on top.
     journeys: function (g, part) {
-      el('polyline', { class: 'climb', points: pts(part, [0, 1, 2, 3]), pathLength: 100 }, g);
+      var ridge = [0, 1, 2, 3].map(function (i) { return part.stars[i]; }), trail = [], side = 1;
+      for (var n = 1; n < ridge.length; n++) {
+        var a = ridge[n - 1], b = ridge[n], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.sqrt(dx * dx + dy * dy);
+        var count = Math.max(2, Math.round(len / 15));
+        trail.push(a.join(','));
+        for (var c = 1; c < count; c++) {
+          side = -side;
+          trail.push((a[0] + dx * c / count - dy / len * 7 * side).toFixed(1) + ',' + (a[1] + dy * c / count + dx / len * 7 * side).toFixed(1));
+        }
+      }
+      trail.push(ridge[ridge.length - 1].join(','));
+      el('polyline', { class: 'climb glow', points: trail.join(' '), pathLength: 100 }, g);
+      el('polyline', { class: 'climb', points: trail.join(' '), pathLength: 100 }, g);
       var top = part.stars[3];
       el('path', { class: 'flag', d: 'M' + top[0] + ' ' + top[1] + 'v-34l22 8-22 9' }, g);
     },
@@ -136,9 +299,11 @@
   };
   // Coming back with the Back button: put the chart where it was.
   window.addEventListener('pageshow', function () {
-    wrap.classList.remove('diving', 'acting');
-    body.classList.remove('sc-diving');
-    Array.prototype.forEach.call(document.querySelectorAll('.sc .act'), function (n) { n.remove(); });
+    wrap.classList.remove('diving', 'acting', 'smooth');
+    body.classList.remove('sc-diving', 'sc-smooth', 'sc-wash');
+    Array.prototype.forEach.call(document.querySelectorAll('.sc .act, .sc-carry, .sc-flash'), function (n) { n.remove(); });
+    hidden.forEach(function (n) { n.style.visibility = ''; n.style.opacity = ''; });
+    hidden = [];
   });
 
   var layer = document.getElementById('constellations');

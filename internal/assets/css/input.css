@@ -117,3 +117,25 @@ main { animation: arrive 0.7s ease both; }
 /* Links in text warm up from marigold to pink. */
 main a:hover { color: #f4b223; }
 ::selection { background: #e8467c; color: #04060e; }
+
+/* Arrival from the star chart (the script in the page head sets data-arrive).
+   The chart ended on a full-screen color: dark for most parts, warm white for
+   Photography, pink to purple for About. The same color starts here and
+   fades, so the whole page comes in as one thing. The thing the chart carried
+   over (the Journeys title, the rule under Journal) sits above that fade from
+   the first frame, exactly where the chart left it. */
+html[data-arrive] body::after {
+  content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  background: #03050c; animation: veil 0.55s ease-out both;
+}
+html[data-arrive="photo"] body::after { background: #fff6e0; animation: veil-flash 0.85s cubic-bezier(0.3, 0, 0.3, 1) both; }
+html[data-arrive="about"] body::after {
+  background: radial-gradient(circle at 50% 45%, #e8467c 0, #6b3fa0 70%, #2a1840 100%);
+  animation-duration: 0.8s;
+}
+@keyframes veil { from { opacity: 1; } to { opacity: 0; } }
+@keyframes veil-flash { from { opacity: 0.95; } to { opacity: 0; } }
+html[data-arrive] main { animation: none; }
+html[data-arrive="journeys"] main h1,
+html[data-arrive="journal"] main .h-1.w-24 { position: relative; z-index: 95; }
+@media (prefers-reduced-motion: reduce) { html[data-arrive] body::after { display: none; } }

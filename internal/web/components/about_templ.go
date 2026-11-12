@@ -41,7 +41,7 @@ func About() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-4xl mx-auto space-y-12 px-4 md:px-0\"><img src=\"/assets/aboutme/profile.jpg\" alt=\"Merl Martin\" class=\"w-full md:w-96 h-auto md:h-96 mx-auto mb-8 object-contain\"><section class=\"space-y-6 text-center\"><h1 class=\"text-4xl font-serif\" style=\"color: var(--color-text-primary);\">About Me</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div><p class=\"text-lg leading-relaxed text-justify\" style=\"color: var(--color-text-secondary);\">Hello! I'm Merl Martin. I have a passion for capturing the world's beauty, whether it's the raw power of wildlife, the serene vastness of landscapes, or the intimate stories told through portraits.  My journey in photography is driven by a desire to freeze moments in time and share them with you.</p></section><section class=\"space-y-6 text-center\"><h2 class=\"text-2xl font-serif\" style=\"color: var(--color-text-primary);\">Contact</h2><p style=\"color: var(--color-text-secondary);\">Feel free to reach out for collaborations, prints, or just to say hi.</p><div class=\"flex flex-wrap justify-center gap-6 pt-4\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-4xl mx-auto space-y-12 px-4 md:px-0\"><div><img src=\"/assets/aboutme/profile.jpg\" alt=\"Merl Martin\" class=\"w-full md:w-96 h-auto md:h-96 mx-auto mb-4 object-contain\"><p class=\"font-mono text-xs uppercase tracking-widest flex items-center justify-center gap-3\" style=\"color: var(--color-text-secondary);\"><svg id=\"about-mark\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path d=\"M16 2v28M2 16h28\" fill=\"none\" stroke=\"#e8467c\" stroke-width=\"4\" stroke-linecap=\"round\"></path></svg> Observer found · 33.49° N, 111.93° W</p></div><section class=\"space-y-6 text-center\"><h1 class=\"text-4xl font-serif\" style=\"color: var(--color-text-primary);\">About Me</h1><div class=\"h-1 w-24 mx-auto\" style=\"background-color: var(--color-border);\"></div><p class=\"text-lg leading-relaxed text-justify\" style=\"color: var(--color-text-secondary);\">Hello! I'm Merl Martin. I have a passion for capturing the world's beauty, whether it's the raw power of wildlife, the serene vastness of landscapes, or the intimate stories told through portraits.  My journey in photography is driven by a desire to freeze moments in time and share them with you.</p></section><section class=\"space-y-6 text-center\"><h2 class=\"text-2xl font-serif\" style=\"color: var(--color-text-primary);\">Contact</h2><p style=\"color: var(--color-text-secondary);\">Feel free to reach out for collaborations, prints, or just to say hi.</p><div class=\"flex flex-wrap justify-center gap-6 pt-4\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -103,7 +103,7 @@ func SocialLink(href, label string) templ.Component {
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/about.templ`, Line: 32, Col: 30}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/about.templ`, Line: 38, Col: 30}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -116,7 +116,7 @@ func SocialLink(href, label string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/about.templ`, Line: 33, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/about.templ`, Line: 39, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
